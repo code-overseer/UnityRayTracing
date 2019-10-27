@@ -6,7 +6,9 @@
 RWTexture2D<float4> Result;
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
-const float PI = 3.14159265359;
+static const float PI = 3.14159265359f;
+static const float EPSILON = 1e-5f;
+static const int MAX_DEPTH = 6;
 
 struct Ray 
 {
@@ -88,6 +90,7 @@ void PlaneHit(in Plane pl, in Ray ray, inout RayHit hit) {
 		hit.distance = t;
 		hit.pos = ray.origin + hit.distance * ray.direction;
 		hit.normal = pl.normal;
+		hit.pos += EPSILON * hit.normal;
 
 		float x = hit.pos.x - pl.origin.x;
 		float z = hit.pos.z - pl.origin.z;
@@ -98,7 +101,6 @@ void PlaneHit(in Plane pl, in Ray ray, inout RayHit hit) {
 }
 void SphereHit(in Sphere sph, in Ray ray, inout RayHit hit)
 {
-	//TODO implement sphere intersection function
 	float3 centreToRayOrigin = ray.origin - sph.centre;
 
 	// Quadratic eqn = at^2 + bt +c = 0
@@ -124,37 +126,12 @@ void SphereHit(in Sphere sph, in Ray ray, inout RayHit hit)
 		hit.distance = t;
 		hit.pos = ray.origin + hit.distance * ray.direction;
 		hit.normal = normalize(hit.pos - sph.centre);
+		hit.pos += EPSILON * hit.normal;
 		hit.color = sph.color;
 	}
 	return;
 	
 }
-
-
-const float3 SOURCE = float3(3,12,2);
-const float3 AMBIENT = {0.9f, 0.8f, 0.7f};
-void Shade(inout RayHit hit, in float3 view) 
-{
-    float3 n = hit.normal;
-	float3 l = normalize(SOURCE - hit.pos);
-	float3 v = normalize(view - hit.pos);
-	float3 h = normalize(l + v);
-	float3 r = reflect(l, n);
-	float d = length(SOURCE - hit.pos);
-	
-	const float shininess = 10;
-	const float intensity = 1400;
-	
-    float3 outColour = max(dot(n, l), 0.0f) * hit.color;
-	outColour += pow(max(dot(r, v), 0), shininess) * AMBIENT;
-	//outColour /= (4 * PI * d * d);
-	outColour += 0.1f * hit.color;
-    
-    hit.color = outColour; 
-    //hit.color /= max(max(hit.color.x,hit.color.y), hit.color.z);
-}
-
-
 
 void FindHit(in Ray r, inout RayHit i)
 {
@@ -166,14 +143,37 @@ void FindHit(in Ray r, inout RayHit i)
     Sphere sphere;
     sphere.centre   = float3(0.0f, 0.0f, 1.0f);
 	sphere.radius   = 0.5f;
-	sphere.color = float3(0.2f,0.8f,0.8f);
+	sphere.color = float3(0.2f,0.8f,0.3f);
      
 	PlaneHit(ground, r, i);	
 	SphereHit(sphere, r, i);
 }
 
-const int MAX_DEPTH = 6;
-const float EPSILON = 1e-5;
+static float3 SOURCE = float3(3.0f, 6.0f, -5.0f);
+static float3 AMBIENT = float3(0.9f, 0.8f, 0.7f);
+void Shade(inout RayHit hit, in Ray ray) 
+{   
+	float3 l = normalize(SOURCE - hit.pos);
+    RayHit shadow = CreateRayHit();
+    FindHit(CreateRay(hit.pos, l), shadow);
+    if (shadow.distance < 1e+5f) {
+        hit.color *= 0.1f;
+        return;
+    }
+	float3 h = normalize(l - ray.direction);
+	float d = length(SOURCE - hit.pos);
+	
+	const float shininess = 60;
+	const float intensity = 750;
+	
+    float3 outColour = max(dot(hit.normal, l), 0.0f) * hit.color;
+	outColour += pow(max(dot(hit.normal, h), 0.0f), shininess) * AMBIENT;
+	outColour *= intensity / (1 + 4 * PI * d * d);
+	outColour += 0.1f * hit.color;
+    
+    hit.color = outColour; 
+}
+
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
@@ -187,22 +187,18 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     Ray ray = CreateCameraRay(uv);
     RayHit hit = CreateRayHit();
     float3 color = Black();
-    
-    
     /* ----Boilerplate---- */
     
-    //Result[id.xy] = float4(White(), 1);
-    //return;
     
     for (int d = 0; d < 1; ++d) 
     {
         hit.distance = 100000.0f;
         FindHit(ray, hit);
-        if (hit.distance > 100000.0f) {
-            Result[id.xy] = float4(0,1,0, 1);
+        if (hit.distance >= 100000.0f) {
+            Result[id.xy] = float4(Black(), 1);
             return;
-        } 
-        Shade(hit, ray.origin);
+        }
+        Shade(hit, ray);
         color += hit.color;
         //ray.direction = normalize(reflect(ray.direction, hit.normal)); 
         //ray.origin = hit.pos + EPSILON*hit.normal;
