@@ -8,7 +8,7 @@ float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
 static const float PI = 3.14159265359f;
 static const float EPSILON = 1e-5f;
-static const int MAX_DEPTH = 6;
+static const int MAX_DEPTH = 5;
 
 struct Ray 
 {
@@ -26,16 +26,25 @@ struct Plane
 struct Sphere 
 {
     float3 centre;
-    float radius;
     float3 color;
+    float radius;
 };
 
 struct RayHit
 {
     float3 pos;
-    float distance;
     float3 normal;
     float3 color;
+    float distance;
+};
+
+struct State 
+{
+    RayHit hit;
+    Ray ray;
+    int depth;
+    float refl;
+    bool outside;
 };
 
 float3 Black()
@@ -90,7 +99,6 @@ void PlaneHit(in Plane pl, in Ray ray, inout RayHit hit) {
 		hit.distance = t;
 		hit.pos = ray.origin + hit.distance * ray.direction;
 		hit.normal = pl.normal;
-		hit.pos += EPSILON * hit.normal;
 
 		float x = hit.pos.x - pl.origin.x;
 		float z = hit.pos.z - pl.origin.z;
@@ -99,6 +107,7 @@ void PlaneHit(in Plane pl, in Ray ray, inout RayHit hit) {
 		hit.color = pl.color * checker;
 	}	
 }
+
 void SphereHit(in Sphere sph, in Ray ray, inout RayHit hit)
 {
 	float3 centreToRayOrigin = ray.origin - sph.centre;
@@ -111,29 +120,25 @@ void SphereHit(in Sphere sph, in Ray ray, inout RayHit hit)
 	// discriminant
 	float discrim = b * b - 4 * a * c;
 
-	if (discrim < 0) {
-		return;
-	}
+	if (discrim < 0) return;
 
 	// Root of quadratic eqn
 	float t = (-b - sqrt(discrim))/(2*a);
 	if (t < 0) {
 		t = (-b + sqrt(discrim))/(2*a);
-		if (t < 0) { return; }
+		if (t < 0) return;
 	}
 
 	if (t < hit.distance) {
 		hit.distance = t;
 		hit.pos = ray.origin + hit.distance * ray.direction;
 		hit.normal = normalize(hit.pos - sph.centre);
-		hit.pos += EPSILON * hit.normal;
 		hit.color = sph.color;
 	}
-	return;
 	
 }
 
-void FindHit(in Ray r, inout RayHit i)
+bool FindHit(inout State state)
 {
     Plane ground;
     ground.origin = float3(0.0f, -1.0f, 0.0f);
@@ -143,66 +148,198 @@ void FindHit(in Ray r, inout RayHit i)
     Sphere sphere;
     sphere.centre   = float3(0.0f, 0.0f, 1.0f);
 	sphere.radius   = 0.5f;
-	sphere.color = float3(0.2f,0.8f,0.3f);
+	sphere.color = float3(0.2f,0.2f,0.5f);
+	
+	Sphere s2;
+    s2.centre   = float3(1.0f, 0.0f, 1.0f);
+	s2.radius   = 0.25f;
+	s2.color = float3(0.3f,0.7f,0.2f);
+    
+	PlaneHit(ground, state.ray, state.hit);	
+	SphereHit(sphere, state.ray, state.hit);
+	SphereHit(s2, state.ray, state.hit);
+	state.outside = dot(state.ray.direction, state.hit.normal) < 0;
+	
+	return state.hit.distance < 100000.0f;
+}
+
+bool FindHit(in Ray ray, in RayHit hit)
+{
+    Plane ground;
+    ground.origin = float3(0.0f, -1.0f, 0.0f);
+    ground.normal = float3(0.0f, 1.0f, 0.0f);
+    ground.color = White();
      
-	PlaneHit(ground, r, i);	
-	SphereHit(sphere, r, i);
+    Sphere sphere;
+    sphere.centre   = float3(0.0f, 0.0f, 1.0f);
+	sphere.radius   = 0.5f;
+	sphere.color = float3(0.2f,0.2f,0.5f);
+	Sphere s2;
+    s2.centre   = float3(1.0f, 0.0f, 1.0f);
+	s2.radius   = 0.25f;
+	s2.color = float3(0.3f,0.7f,0.2f);
+    
+	PlaneHit(ground, ray, hit);	
+	SphereHit(sphere, ray, hit);
+	SphereHit(s2, ray, hit);
+	
+	return hit.distance < 100000.0f;
 }
 
 static float3 SOURCE = float3(3.0f, 6.0f, -5.0f);
 static float3 AMBIENT = float3(0.9f, 0.8f, 0.7f);
-void Shade(inout RayHit hit, in Ray ray) 
+static const float KS = 0.1f;
+
+void Shadow(inout State state) 
+{
+    Ray ray = CreateRay(state.hit.pos, normalize(SOURCE - state.hit.pos));
+    ray.origin += (state.outside ? EPSILON : -EPSILON) * state.hit.normal;
+    if ( !state.outside || dot(state.hit.normal, ray.direction) < 0 
+        || !FindHit(ray, CreateRayHit()) ) return;
+    
+    state.hit.color *= KS;
+}
+
+void Shade(inout State state) 
 {   
-	float3 l = normalize(SOURCE - hit.pos);
-    RayHit shadow = CreateRayHit();
-    FindHit(CreateRay(hit.pos, l), shadow);
-    if (shadow.distance < 1e+5f) {
-        hit.color *= 0.1f;
-        return;
-    }
-	float3 h = normalize(l - ray.direction);
-	float d = length(SOURCE - hit.pos);
+	float3 l = normalize(SOURCE - state.hit.pos);
+	float3 h = normalize(l - state.ray.direction);
+	float d = length(SOURCE - state.hit.pos);
 	
 	const float shininess = 60;
 	const float intensity = 750;
 	
-    float3 outColour = max(dot(hit.normal, l), 0.0f) * hit.color;
-	outColour += pow(max(dot(hit.normal, h), 0.0f), shininess) * AMBIENT;
+    float3 outColour = max(dot(state.hit.normal, l), 0.0f) * state.hit.color;
+	outColour += pow(max(dot(state.hit.normal, h), 0.0f), shininess) * AMBIENT;
 	outColour *= intensity / (1 + 4 * PI * d * d);
-	outColour += 0.1f * hit.color;
+	outColour += KS * state.hit.color;
+    state.hit.color = outColour;
     
-    hit.color = outColour; 
+    Shadow(state);
+}
+
+void Refract(inout State state, in float ior) 
+{ 
+	float cosi = dot(state.ray.direction, state.hit.normal);
+	bool b = (cosi > 0);
+	float eta = b / ior + !b * ior;
+	float k = 1 - eta * eta * (1 - cosi * cosi);
+	state.ray.direction = (k < 0) ? 
+	                float3(0,0,0) : 
+	                normalize(eta * state.ray.direction - (eta * cosi + sqrt(k)) * state.hit.normal);
+	state.ray.origin = state.hit.pos;
+	state.ray.origin += (state.outside ? -EPSILON : EPSILON) * state.hit.normal;
+}
+
+void Reflect(inout State state) 
+{
+    state.ray.direction = normalize(reflect(state.ray.direction, state.hit.normal));
+    state.ray.origin = state.hit.pos;
+    state.ray.origin += (state.outside ? EPSILON : -EPSILON) * state.hit.normal;
+}
+
+bool Fresnel(inout State state, in float ior) {
+	float cosi = dot(state.ray.direction, state.hit.normal);
+	bool b = (cosi > 0);
+	float etai = b * ior + !b;
+	float etat = b + !b * ior;
+	// Schilck's approx.
+	cosi = abs(cosi);
+	float r0 = (etai - etat)/(etai + etat);
+	r0 *= r0;
+	state.refl = r0 + (1 - r0)*pow((1 - cosi), 5);
+	return state.refl < 1;
+}
+
+static State states[pow(2, MAX_DEPTH - 1)];
+State Init(in float2 uv) 
+{
+    State state;
+    state.ray = CreateCameraRay(uv);
+    state.hit = CreateRayHit();
+    state.outside = true;
+    state.refl = 1;
+    state.depth = 0;
+    return state;
+}
+
+void Push(inout int ptr, in State current) 
+{
+    static const int size = pow(2, MAX_DEPTH - 1);
+    if (ptr >= size || current.depth >= MAX_DEPTH - 1) return;
+   
+    states[ptr].ray = current.ray;
+    states[ptr].hit = current.hit;
+    states[ptr].outside = current.outside;
+    states[ptr].refl = current.refl;
+    states[ptr].depth = current.depth;
+    
+    ptr++;
+}
+
+void Pop(inout int ptr, out State current) 
+{
+    current = states[--ptr];
+}
+
+void Trace(inout int ptr, inout float3 color, inout State current) {
+    if (current.depth >= MAX_DEPTH - 1) return;
+    current.hit.distance = 100000.0f;
+    if (!FindHit(current)) 
+    {
+        if (ptr > 0) 
+        {
+            Pop(ptr, current);
+            color += current.hit.color * current.refl;
+            Reflect(current);
+        }
+        ++current.depth;
+        return;
+    } 
+    Shade(current);
+    if (Fresnel(current, 1.3f)) 
+    {
+        Push(ptr, current);
+        color += current.hit.color * (1 - current.refl);
+        Refract(current, 1.3f);
+    } 
+    else 
+    {
+        color += current.hit.color;
+        Reflect(current);
+    }
+    ++current.depth;
 }
 
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-
     /* ----Boilerplate---- */
     uint width, height;
     Result.GetDimensions(width, height);
-    // Transform pixel to [-1,1] range
     float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
-    // Get a ray for the UVs
-    Ray ray = CreateCameraRay(uv);
-    RayHit hit = CreateRayHit();
+    State current = Init(uv);
     float3 color = Black();
+    int stack_ptr = 0;
     /* ----Boilerplate---- */
     
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
+    Trace(stack_ptr, color, current);
     
-    for (int d = 0; d < 1; ++d) 
-    {
-        hit.distance = 100000.0f;
-        FindHit(ray, hit);
-        if (hit.distance >= 100000.0f) {
-            Result[id.xy] = float4(Black(), 1);
-            return;
-        }
-        Shade(hit, ray);
-        color += hit.color;
-        //ray.direction = normalize(reflect(ray.direction, hit.normal)); 
-        //ray.origin = hit.pos + EPSILON*hit.normal;
-    }
     
     Result[id.xy] = float4(color, 1);
 }

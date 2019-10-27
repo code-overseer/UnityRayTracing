@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections;
-using UnityEngine;
-using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class CameraMotion : MonoBehaviour
 {
@@ -25,7 +21,6 @@ public class CameraMotion : MonoBehaviour
         {
             Pitch(Input.GetAxis("Mouse Y"));
             Yaw(Input.GetAxis("Mouse X"));
-            ClampPitch();
         }
         // Bounds
         ClampVertical();
@@ -45,31 +40,30 @@ public class CameraMotion : MonoBehaviour
 
     private void MoveLateral(float input)
     {
-
         transform.position += input * Time.unscaledDeltaTime * _cameraTransform.right;
     }
     
-    private void Zoom(in float input)
+    private void Zoom(float input)
     {
         var front = _cameraTransform.forward;
         // Cannot zoom when facing up
         if (front.y < 0)
         {
-            transform.position += input * Time.unscaledDeltaTime * front;
+            transform.position += input * Time.unscaledDeltaTime * 3 * front;
         }
     }
 
-    private void Pitch(in float input)
+    private void Pitch(float input)
     {
-        transform.Rotate(input, 0, 0);
+        transform.Rotate(-input * 30, 0, 0);
     }
 
-    private void Yaw(in float input)
+    private void Yaw(float input)
     {
-        transform.Rotate(0, input, 0, Space.World);
+        transform.Rotate(0, input * 30, 0, Space.World);
     }
 
-    private void Rotate(in float input)
+    private void Rotate(float input)
     {
         var pos = transform.position;
         var forward = _cameraTransform.forward;
@@ -82,33 +76,6 @@ public class CameraMotion : MonoBehaviour
         var position = transform.position;
         position.y = Mathf.Clamp(position.y, 0, 10);
         transform.position = position;
-    }
-
-    private void ClampPitch()
-    {
-        const float lowerAngle = -35;
-        const float upperAngle = 90;
-        var front = Vector3.Cross(_cameraTransform.right, Vector3.up).normalized;
-        if (_cameraTransform.forward.y > 0)
-        {
-            var up = Vector3.Angle(front, _cameraTransform.forward);
-            if (up > upperAngle)
-            {
-                transform.rotation *= Quaternion.AngleAxis(up - upperAngle, Vector3.right);
-            }
-            if (up < -lowerAngle)
-            {
-                transform.rotation *= Quaternion.AngleAxis(up + lowerAngle, Vector3.right);
-            }
-        }
-        else
-        {
-            var down = Vector3.Angle(front, _cameraTransform.forward);
-            if (down > lowerAngle)
-            {
-                transform.rotation *= Quaternion.AngleAxis(down - lowerAngle, -Vector3.right);
-            }
-        }
     }
 
     #endregion
