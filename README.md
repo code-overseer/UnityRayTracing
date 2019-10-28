@@ -1,10 +1,9 @@
 # RayTracing in Unity
 
-Just having some fun playing around with Ray Tracing ran at quite low resolutions (720p) due to my lack of GPU horsepower. 
+Just having some fun with ray tracing in Unity. These are ran at quite low resolutions (720p) due to lack of GPU horsepower. 
 
-## Specifications
-System: Macbook Pro 2017
-GPU: AMD Radeon Pro 555
+## System Specification
+Macbook Pro 2017 with AMD Radeon Pro 555 (2GB VRAM)
 
 ## Screenshots
 ![alt text](https://github.com/muramasa2402/UnityRayTracing/blob/master/Assets/Screenshots/screenshot.png)
