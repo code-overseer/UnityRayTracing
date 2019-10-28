@@ -278,6 +278,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rtxShader: {fileID: 7200000, guid: 4bbdc3c8282654d10a0e9944e2b93fa8, type: 3}
+  skybox: {fileID: 2800000, guid: 051ba3d81068b4ce29a2eb548b71179b, type: 3}
 --- !u!114 &534669907
 MonoBehaviour:
   m_ObjectHideFlags: 0

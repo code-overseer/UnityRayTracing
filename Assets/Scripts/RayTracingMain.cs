@@ -4,9 +4,10 @@ public class RayTracingMain : MonoBehaviour
 {
     // Start is called before the first frame update
     public ComputeShader rtxShader;
-
-    private RenderTexture _target;
+    public Texture skybox;
     
+    private RenderTexture _target;
+
     private Camera _camera;
 
     private void Awake()
@@ -33,6 +34,7 @@ public class RayTracingMain : MonoBehaviour
 
         // Set the target and dispatch the compute shader
         rtxShader.SetTexture(0, "Result", _target);
+        rtxShader.SetTexture(0, "_skybox", skybox);
         var threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
         var threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
         rtxShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
