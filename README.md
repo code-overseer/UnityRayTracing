@@ -10,5 +10,5 @@ Macbook Pro 2017 with AMD Radeon Pro 555 (2GB VRAM)
 
 A scene with 4 spheres: red transparent, colourless transparent, purple diffuse, green mirror. Implemented a simple hack to create the light focusing effect when it passes through transparent spheres causing the middle of the shadow to light up.
 
-![alt text](https://github.com/muramasa2402/UnityRayTracing/blob/master/Assets/Screenshots/screenshot01.png)
+![alt text](https://github.com/muramasa2402/UnityRayTracing/blob/master/Assets/Screenshots/screenshot02.png)
 Same scene but with a cube.
