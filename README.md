@@ -13,5 +13,7 @@ A scene with 4 spheres with a point light source: red transparent, colourless tr
 ![alt text](https://github.com/muramasa2402/UnityRayTracing/blob/master/Assets/Screenshots/screenshot02.png)
 Same scene but with a cube.
 
+![alt text](https://github.com/muramasa2402/UnityRayTracing/blob/master/Assets/Screenshots/screenshot04.png)
+
 ![alt text](https://github.com/muramasa2402/UnityRayTracing/blob/master/Assets/Screenshots/screenshot03.png)
 Same as example 2 but all objects have diffuse surfaces. Rendered using monte carlo integration to achieve soft shadows and colour bleeding with depth 3 and 128 samples per pixel.

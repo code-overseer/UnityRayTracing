@@ -10,21 +10,19 @@ static const int TRANS = 2;
 static const float PI = 3.14159265359f;
 static const float EPSILON = 1e-5f;
 static const float MAX_DIST = 1e+5f;
-static const float KS = 0.0f;
+static const float KS = 0.1f;
 
 struct Material
 {
     float3 eps;
     float3 rho;
-    float albedo;
 };
 
-Material CreateMaterial(in float3 reflective, in float3 emissive, in float a)
+Material CreateMaterial(in float3 reflective, in float3 emissive)
 {
     Material mat;
     mat.eps = emissive;
     mat.rho = reflective;
-    mat.albedo = a;
     return mat;
 }
 
@@ -219,10 +217,40 @@ RayHit CreateRayHit()
     RayHit hit;
     hit.pos = Black();
     hit.n = Black();
-    hit.mat = CreateMaterial(Black(), Black(), 0);
+    hit.mat = CreateMaterial(Black(), Black());
     hit.dist_type[0] = MAX_DIST;
     hit.dist_type[1] = DIFF;
     return hit;
+}
+
+float rnd()
+{
+    static int seed = 0;
+	seed = int(fmod(float(seed)*1364.0+626.0, 509.0));
+	return float(seed)/509.0;
+}
+
+float3 UniformHemisphere(in float3 normal) 
+{
+    
+    float3 x;
+    if (abs(normal.x) > abs(normal.y)) 
+        x = normalize(float3(normal.z, 0, -normal.x)); 
+    else 
+        x = normalize(float3(0, -normal.z, normal.y));
+     
+    float3 z = cross(x, normal);
+    float2 r = float2(rnd(), rnd());
+    float2 a = float2(sqrt(1 - r.x * r.x), 2 * PI * r.y);
+    float3 output = float3(a.x * cos(a.y), r.x, a.x * sin(a.y));
+    output = float3(
+        output.x * z.x + output.y * normal.x + output.z * x.x, 
+        output.x * z.y + output.y * normal.y + output.z * x.y, 
+        output.x * z.z + output.y * normal.z + output.z * x.z
+    );
+    
+    return output;  
+
 }
 
 #endif

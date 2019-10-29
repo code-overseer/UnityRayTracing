@@ -12,7 +12,7 @@ float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
 static const int MAX_DEPTH = 4;
 static const float IOR = 2.1f;
-static Plane ground;
+static Plane planes[6];
 static const int N = 4;
 static Sphere spheres[N];
 static Box box;
@@ -20,18 +20,21 @@ static Point source;
 static State states[MAX_DEPTH - 1];
 
 bool FindHit(inout State state)
-{    
-	if (PlaneHit(ground, state.ray, state.hit))
+{   
+    BoxHit(box, state.ray, state.hit);
+    for (int i = 0; i < 1; ++i) 
+    {
+        if (PlaneHit(planes[i], state.ray, state.hit))
+        {
+            float3 v = 4 * (state.hit.pos.xyz - planes[i].pos.xyz);
+            bool b = state.hit.n.y;
+            state.hit.mat.rho = planes[i].mat.rho * (b * cos(v.x)*cos(v.z) + !b * cos(v.x)*cos(v.y) > 0);
+        }
+    }
+	for (int j = 0; j < N; ++j) 
 	{
-	    float2 v = 4 * (state.hit.pos.xz - ground.pos.xz);
-	    state.hit.mat.rho = ground.mat.rho * (cos(v.x)*cos(v.y) > 0);
+	    SphereHit(spheres[j], state.ray, state.hit);
 	}
-	
-	for (int i = 0; i < N; ++i) 
-	{
-	    SphereHit(spheres[i], state.ray, state.hit);
-	}
-	BoxHit(box, state.ray, state.hit);
 	state.kr_d_out.z = dot(state.ray.dir, state.hit.n) < 0;
 	
 	return state.hit.dist_type[0] < MAX_DIST;
@@ -111,33 +114,58 @@ State Init(in float2 uv)
     state.kr_d_out.y = 0;
     state.kr_d_out.z = 1;
     
-    source.pos = float3(3.0f, 6.0f, 5.0f);
-    source.mat = CreateMaterial(Black(), float3(0.9f, 0.8f, 0.7f), 1);
-    
-    ground.pos = float3(0, -1, 0);
-    ground.n = float3(0, 1, 0);
-    ground.mat = CreateMaterial(White()*0.4f, Black(), 1);
-    ground.type = DIFF;
+    source.pos = float3(0.0f, 1.9f, 6.9f);
+    source.mat = CreateMaterial(Black(), float3(0.9f, 0.8f, 0.7f));
 
     spheres[0].centre   = float4(0.3f, -0.45f, 0.6f, 0.5f);
-	spheres[0].mat = CreateMaterial(Black(), Black(), 1);
+	spheres[0].mat = CreateMaterial(Black(), Black());
 	spheres[0].type = TRANS;
     spheres[1].centre   = float4(0.7f, -0.6f, -1.0f, 0.25f);
-	spheres[1].mat = CreateMaterial(float3(0.3f,0.7f,0.2f), Black(), 1);
+	spheres[1].mat = CreateMaterial(float3(0.3f,0.7f,0.2f), Black());
 	spheres[1].type = REFL;
 	spheres[2].centre   = float4(-1.0f, -0.5f, 0.5f, 0.4f);
-	spheres[2].mat = CreateMaterial(float3(0.9f,0.2f,0.2f), Black(), 1);
+	spheres[2].mat = CreateMaterial(float3(0.9f,0.2f,0.2f), Black());
 	spheres[2].type = REFL;
 	spheres[3].centre   = float4(0.0f, -0.4f, -0.5f, 0.3f);
-	spheres[3].mat = CreateMaterial(float3(0.8f,0.2f,0.9f), Black(), 1);
+	spheres[3].mat = CreateMaterial(float3(0.8f,0.2f,0.9f), Black());
 	spheres[3].type = DIFF;
 	
-	box.pn[0] = float4(-0.8f,-0.4f,-0.8f,1);
+	box.pn[0] = float4(0,0.6,-1.4,1);
 	box.pn[1] = float4(normalize(float3(0,-0.3f,4)),0.25f);
 	box.pn[2] = float4(normalize(float3(-2.46,1.2,0.09)),0.25f);
 	box.pn[3] = float4(normalize(cross(box.pn[1].xyz, box.pn[2].xyz)),0.25f);
-	box.mat = CreateMaterial(float3(0.1f,0.2f,0.9f), Black(),1);
+	box.mat = CreateMaterial(float3(0.1f,0.2f,0.9f), Black());
 	box.type = TRANS;
+	
+	planes[0].pos = float3(0,-1,0);
+	planes[0].n = float3(0,1,0);
+	planes[0].mat = CreateMaterial(White(), KS * White());
+    planes[0].type = REFL;
+	
+	planes[1].pos = float3(0,2,0);
+	planes[1].n = float3(0,-1,0);
+	planes[1].mat = CreateMaterial(Black(), KS * Black());
+	planes[1].type = TRANS;
+	
+	planes[2].pos = float3(-2,0,0);
+	planes[2].n = float3(1,0,0);
+	planes[1].mat = CreateMaterial(Black(), KS * Black());
+	planes[1].type = TRANS;
+	
+	planes[3].pos = float3(2,0,0);
+	planes[3].n = float3(-1,0,0);
+	planes[1].mat = CreateMaterial(Black(), KS * Black());
+	planes[1].type = TRANS;
+	
+	planes[4].pos = float3(0,0,2);
+	planes[4].n = float3(0,0,-1);
+	planes[4].mat = CreateMaterial(White(), KS * White());
+	planes[4].type = DIFF;
+	
+	planes[5].pos = float3(0,0,-6);
+	planes[5].n = float3(0,0,1);
+	planes[5].mat = CreateMaterial(White(), Black());
+	planes[5].type = DIFF;
     
     return state;
 }

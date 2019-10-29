@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class CameraMotion : MonoBehaviour
 {
@@ -67,7 +68,7 @@ public class CameraMotion : MonoBehaviour
     {
         var pos = transform.position;
         var forward = _cameraTransform.forward;
-        pos -= forward * pos.y / forward.y;
+        pos -= forward * pos.y / (forward.y > 0 ? forward.y : 0.01f);
         transform.RotateAround(pos, Vector3.up, input);
     }
 
