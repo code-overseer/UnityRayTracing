@@ -1,5 +1,6 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
+#include "shader.cginc"
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
@@ -8,206 +9,20 @@ Texture2D<float4> _skybox;
 SamplerState sampler_skybox;
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
-static const float KS = 0.1f;
-static const float PI = 3.14159265359f;
-static const float EPSILON = 1e-5f;
-static const int MAX_DEPTH = 3;
-static const int SAMPLES = 128;
-
-struct Ray 
-{
-    float3 origin;
-    float3 dir;
-};
-
-struct Material
-{
-    float3 eps;
-    float3 rho;
-};
-
-struct Plane 
-{
-    float3 pos;
-    float3 n;
-    Material mat;
-};
-
-struct Disc
-{
-    float3 pos;
-    float4 n;
-    Material mat;
-};
-
-struct Sphere 
-{
-    float4 centre;
-    Material mat;
-};
-
-struct Box
-{
-    float4x4 pn;
-    Material mat;
-};
-
-struct RayHit
-{
-    float3 pos;
-    float3 n;
-    float distance;
-    Material mat;
-};
-
-struct State 
-{
-    RayHit hit;
-    Ray ray;
-    int depth;
-};
-
-float3 Black()
-{
-    return float3(0.0f, 0.0f, 0.0f);
-}
-
-float3 White() 
-{
-    return float3(1.0f, 1.0f, 1.0f);
-}
-
-Ray CreateRay(in float3 origin, in float3 dir) 
-{
-    Ray ray;
-    ray.origin = origin;
-    ray.dir = dir;
-    return ray;
-}
-
-Ray CreateCameraRay(float2 uv)
-{
-    // Transform the camera origin to world space
-    float3 origin = mul(_CameraToWorld, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
-    // Invert the perspective projection of the view-space position
-    float3 dir = mul(_CameraInverseProjection, float4(uv, 0.0f, 1.0f)).xyz;
-    // Transform the dir from camera to world space and normalize
-    dir = mul(_CameraToWorld, float4(dir, 0.0f)).xyz;
-    dir = normalize(dir);
-
-    return CreateRay(origin, dir);
-}
-
-RayHit CreateRayHit()
-{
-    RayHit hit;
-    hit.distance = 1.#INF;
-    hit.pos = Black();
-    hit.n = Black();
-    hit.mat.rho = Black();
-    hit.mat.eps = Black();
-    return hit;
-}
-
-void PlaneHit(in Plane pl, in Ray ray, inout RayHit hit) 
-{
-    float t = dot(pl.pos - ray.origin, pl.n) / dot(ray.dir, pl.n);
-	if (t < 0 || t > hit.distance || dot(ray.dir, pl.n) > 0) return;
-	hit.distance = t;
-    hit.pos = ray.origin + hit.distance * ray.dir;
-    hit.n = pl.n;
-    hit.mat = pl.mat;	
-}
-
-void DiscHit(in Disc ds, in Ray ray, inout RayHit hit)
-{
-    float t = dot(ds.pos - ray.origin, ds.n.xyz) / dot(ray.dir, ds.n.xyz);
-    float3 p = ray.origin + hit.distance * ray.dir - ds.pos;
-    if (t < 0 || t > hit.distance || dot(ray.dir, ds.n.xyz) > 0 || dot(p, p) > ds.n.w * ds.n.w) return;
-    hit.distance = t;
-    hit.pos = p;
-    hit.n = ds.n.xyz;
-    hit.mat = ds.mat;
-}
-
-void SphereHit(in Sphere sph, in Ray ray, inout RayHit hit)
-{
-	float3 centreToRayOrigin = ray.origin - sph.centre.xyz;
-
-	// Quadratic eqn = at^2 + bt + c = 0
-	float a = dot(ray.dir, ray.dir);
-	float b = 2 * dot(ray.dir, centreToRayOrigin);
-	float c = dot(centreToRayOrigin, centreToRayOrigin) - sph.centre.w * sph.centre.w;
-
-	// discriminant
-	float d = b * b - 4 * a * c;
-	if (d < 0) return;
-
-	// Root of quadratic eqn
-	float t = (-b - sqrt(d))/(2*a);
-	if (t < 0) {
-		t = (-b + sqrt(d))/(2*a);
-		if (t < 0) return;
-	}
-
-	if (t >= hit.distance) return;
-    
-    hit.distance = t;
-    hit.pos = ray.origin + hit.distance * ray.dir;
-    hit.n = normalize(hit.pos - sph.centre.xyz);
-    hit.mat = sph.mat;
-	
-}
-
-bool HelperBox(in float3 p, in Box bx, in RayHit hit)
-{
-    return ( dot(p, p) < dot(bx.pn._m13_m23_m33, bx.pn._m13_m23_m33) );
-}
-
-bool BoxHit(in float3 p, in bool sign, in int idx, in Box bx)
-{
-    float3 n = (!sign - sign) * bx.pn[idx].xyz;
-    float3 v = bx.pn[0].xyz + n * bx.pn[idx].w;
-    return (dot(p, n) - dot(v, n) < 0); 
-}
-
-void BoxHit(in Box bx, in Ray ray, inout RayHit hit) 
-{
-    float3x3 a;
-    float t;
-    bool sign = 1;
-    uint idx = 1;
-    
-    for (uint i = 0; i < 6; ++i)
-    {
-        a[0] = (!sign - sign) * bx.pn[idx].xyz;
-        a[1] = bx.pn[0].xyz + a[0] * bx.pn[idx].w;
-        t = dot(a[1] - ray.origin, a[0]) / dot(ray.dir, a[0]);
-        a[2] = ray.origin + t * ray.dir;
-        if ( t > 0 && t < hit.distance && HelperBox(a[2] - bx.pn[0].xyz, bx, hit) && BoxHit(a[2], !sign, idx, bx) && 
-            BoxHit(a[2], !sign, idx % 3 + 1, bx) && BoxHit(a[2], sign, idx % 3 + 1, bx) &&
-            BoxHit(a[2], !sign, (idx + 1) % 3 + 1, bx) && BoxHit(a[2], sign, (idx + 1) % 3 + 1, bx) )
-        {
-            hit.distance = t;
-            hit.pos = a[2];
-            hit.n = a[0];
-            hit.mat = bx.mat;
-        }
-        sign = !sign;
-        idx += sign;
-    }
-    
-}
+static const int MAX_DEPTH = 16;
+static const int SAMPLES = 48;
 
 static Plane planes[6];
-static const int N = 4;
+static const int N = 2;
 static Sphere spheres[N];
 static Box box;
-static Disc source;
+//static Disc source;
+static State states[MAX_DEPTH - 1];
+
 bool FindHit(inout State state)
 {    
-    DiscHit(source, state.ray, state.hit);
-    for (int i = 0; i < 1; ++i) 
+    //DiscHit(source, state.ray, state.hit);
+    for (int i = 0; i < 6; ++i) 
 	{
 	    PlaneHit(planes[i], state.ray, state.hit);
 	}
@@ -216,8 +31,8 @@ bool FindHit(inout State state)
 	    SphereHit(spheres[j], state.ray, state.hit);
 	}
 	BoxHit(box, state.ray, state.hit);
-    //	state.outside = dot(state.ray.dir, state.hit.pnc[1]) < 0;
-	return state.hit.distance < 100000.0f;
+    state.kr_d_out.z = dot(state.ray.dir, state.hit.n) < 0;
+	return state.hit.dist_type[0] < 100000.0f;
 }
 
 float rnd()
@@ -233,7 +48,6 @@ float3 Random(in float3 normal)
     bool b = dot(output, normal) > 0;
     return output * (b  - !b); 
 }
-static State states[MAX_DEPTH - 1];
 void Push(inout int ptr, in State current) 
 {
     if (ptr >= MAX_DEPTH - 1) return;
@@ -248,14 +62,15 @@ void Pop(inout int ptr, out State current)
 void Trace(inout int ptr, inout float3 color, inout State current) 
 {
     static const float p = 0.5f / PI;
-    if (current.depth >= MAX_DEPTH || !FindHit(current)) 
+    if (current.kr_d_out[1] >= MAX_DEPTH || !FindHit(current)) 
     {
         if (ptr > 0) 
-        {
+        {   
+            float d = current.hit.dist_type[0];
             Pop(ptr, current);
-            float cosi = dot(current.ray.dir, current.hit.n) / (1 + 4 * PI * pow(current.hit.distance,2)) * 300;
-            color = current.hit.mat.eps + (cosi / (PI * p) * current.hit.mat.rho * color);
-            current.depth = MAX_DEPTH;
+            float cosi = dot(current.ray.dir, current.hit.n);
+            color = current.hit.mat.eps * 10 + (cosi * current.hit.mat.rho / PI * color / p) * current.hit.mat.albedo;
+            current.kr_d_out[1] = MAX_DEPTH;
         }
         return;
     }
@@ -264,35 +79,32 @@ void Trace(inout int ptr, inout float3 color, inout State current)
     current.ray.dir = Random(current.hit.n);
     
     Push(ptr, current);
-    ++current.depth;
+    ++current.kr_d_out[1];
 }
 
 
 State Init(in float2 uv) 
 {
     State state;
-    state.ray = CreateCameraRay(uv);
+    state.ray = CreateCameraRay(_CameraToWorld, _CameraInverseProjection, uv);
     state.hit = CreateRayHit();
-    state.depth = 0;
-
-    source.pos = float3(0.0f, 5.0f, 0.0f);
-    source.n = float4(0,-1,0, 5.0f);
-    source.mat.rho = Black();
-    source.mat.eps = float3(0.9f, 0.8f, 0.7f);
+    state.kr_d_out[0] = 1;
+    state.kr_d_out[1] = 0;
+    state.kr_d_out[2] = 1;
     
+    //source.pos = float3(0.0f, 5.0f, 0.0f);
+    //source.n = float4(0,-1, 0, 5);
+    //source.mat = CreateMaterial(Black(), float3(0.7f, 0.7f, 1.0f));
 
     spheres[0].centre   = float4(0.3f, -0.45f, 0.6f, 0.5f);
 	spheres[0].mat.rho = White();
 	spheres[0].mat.eps = spheres[0].mat.rho * KS;
+	spheres[0].mat.albedo = 0.75f;
+	
     spheres[1].centre   = float4(0.7f, -0.6f, -1.0f, 0.25f);
 	spheres[1].mat.rho = float3(0.3f,0.1f,0.2f);
 	spheres[1].mat.eps = spheres[1].mat.rho * KS;
-	spheres[2].centre   = float4(-1.0f, -0.5f, 0.5f, 0.4f);
-	spheres[2].mat.rho = float3(0.9f,0.2f,0.2f);
-	spheres[2].mat.eps = spheres[2].mat.rho * KS;
-	spheres[3].centre   = float4(0.0f, -0.4f, -0.5f, 0.3f);
-	spheres[3].mat.rho = float3(0.8f,0.2f,0.9f);
-	spheres[3].mat.eps = spheres[3].mat.rho * KS;
+	spheres[1].mat.albedo = 0.5f;
 	
 	box.pn[0] = float4(-0.8f,-0.4f,-0.8f,1);
 	box.pn[1] = float4(normalize(float3(0,-0.3f,4)),0.25f);
@@ -300,26 +112,33 @@ State Init(in float2 uv)
 	box.pn[3] = float4(normalize(cross(box.pn[1].xyz, box.pn[2].xyz)),0.25f);
 	box.mat.rho = float3(0.1f,0.2f,0.9f);
 	box.mat.eps = box.mat.rho * KS;
+	box.mat.albedo = 0.65f;
 	
 	planes[0].pos = float3(0,-1,0);
 	planes[0].n = float3(0,1,0);
-	planes[1].pos = float3(0,12,0);
+	planes[0].mat.rho = White();
+    planes[0].mat.eps = planes[0].mat.rho * KS;
+    planes[0].mat.albedo = 1;
+	
+	planes[1].pos = float3(0,5,0);
 	planes[1].n = float3(0,-1,0);
+	planes[1].mat = CreateMaterial(Black(), float3(0.7f, 0.7f, 1.0f), 1);
 	
-	planes[2].pos = float3(12,0,0);
-	planes[2].n = float3(-1,0,0);
-	planes[3].pos = float3(-12,0,0);
-	planes[3].n = float3(1,0,0);
+	planes[2].pos = float3(-6,0,0);
+	planes[2].n = float3(1,0,0);
+	planes[2].mat = CreateMaterial(Black(), float3(0.7f, 0.7f, 1.0f), 1);
 	
-	planes[4].pos = float3(0,0,12);
-	planes[4].n = float3(0,0,-1);
-	planes[5].pos = float3(0,0,-12);
-	planes[5].n = float3(0,0,1);
-	for (int i = 0; i < 6; ++i) 
-	{
-        planes[i].mat.rho = float3(0.47, 1, 0.2);
-        planes[i].mat.eps = planes[i].mat.rho * KS;
-	}
+	planes[3].pos = float3(6,0,0);
+	planes[3].n = float3(-1,0,0);
+	planes[3].mat = CreateMaterial(Black(), float3(0.7f, 0.7f, 1.0f), 1);
+	
+	planes[4].pos = float3(0,0,-6);
+	planes[4].n = float3(0,0,1);
+	planes[4].mat = CreateMaterial(Black(), float3(0.7f, 0.7f, 1.0f), 1);
+	
+	planes[5].pos = float3(0,0,6);
+	planes[5].n = float3(0,0,-1);
+	planes[5].mat = CreateMaterial(Black(), float3(0.7f, 0.7f, 1.0f), 1);
     
     return state;
 }
@@ -343,9 +162,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         {
             Trace(ptr, color, current);
         } while (ptr > 0);
-        
         pixel += color;
     }
+
     Result[id.xy] = float4(pixel / SAMPLES, 1); 
     
 }

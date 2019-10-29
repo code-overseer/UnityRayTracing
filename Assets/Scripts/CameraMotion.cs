@@ -27,7 +27,7 @@ public class CameraMotion : MonoBehaviour
         
     }
 
-    private float SpeedScale => 2 * transform.position.y + 1;
+    private float SpeedScale => 2 * transform.position.y + 5;
 
     #region Movement Implementation
 
@@ -74,7 +74,7 @@ public class CameraMotion : MonoBehaviour
     private void ClampVertical()
     {
         var position = transform.position;
-        position.y = Mathf.Clamp(position.y, 0, 10);
+        position.y = Mathf.Clamp(position.y, -5, 20);
         transform.position = position;
     }
 
