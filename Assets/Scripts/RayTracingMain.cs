@@ -8,6 +8,7 @@ public class RayTracingMain : MonoBehaviour
     // Start is called before the first frame update
     public ComputeShader rtxShader;
     public Texture skybox;
+    //public bool monteCarlo;
     
     private RenderTexture _target;
     private Camera _camera;
@@ -45,14 +46,14 @@ public class RayTracingMain : MonoBehaviour
 
         // Set the target and dispatch the compute shader
         rtxShader.SetTexture(0, "Result", _target);
-        rtxShader.SetTexture(0, "_skybox", skybox);
         rtxShader.SetVector("_pixelOffset", UnityEngine.Random.insideUnitCircle);
+        rtxShader.SetTexture(0, "_skybox", skybox);
+        
         var threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
         var threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
         rtxShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
 
         // Blit the result texture to the screen
-        //Graphics.Blit(_target, destination);
         if (_addMaterial == null)
             _addMaterial = new Material(Shader.Find("Hidden/AAShader"));
         _addMaterial.SetFloat("_Sample", _currentSample);

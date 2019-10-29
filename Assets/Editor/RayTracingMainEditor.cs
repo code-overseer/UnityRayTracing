@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using System.IO;
+using UnityEditor;
 using UnityEngine;
 
 namespace Editor
@@ -11,10 +12,11 @@ namespace Editor
         {
             base.OnInspectorGUI();
             if (!GUILayout.Button("Screenshot")) return;
-            ScreenCapture.CaptureScreenshot("/Users/bryanwong/Downloads/screenshot.png");
-//            var script = target as RayTracingMain;
-//            if (script == null) return;
-//            if (!script.Capture) script.Capture = true;
+            
+            var count = Directory.GetFiles("Assets/Screenshots/").Length / 2 + 1;
+            var path = Path.Combine(Directory.GetParent("Assets/Screenshots/").FullName, 
+                $"screenshot{count:00}.png");
+            ScreenCapture.CaptureScreenshot(path);
         }
     }
 }

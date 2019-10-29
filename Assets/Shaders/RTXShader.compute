@@ -183,22 +183,23 @@ void BoxHit(in Box bx, in Ray ray, inout RayHit hit)
     
 }
 
-static const Plane ground = { {float3(0.0f, -1.0f, 0.0f), float3(0.0f, 1.0f, 0.0f), White()}, DIFF };
-//static const Sphere ground = { float4(0, -600, 0, 599), White(), DIFF };
+//static const Plane ground = { {float3(0.0f, -1.0f, 0.0f), float3(0.0f, 1.0f, 0.0f), White()}, DIFF };
+static const Sphere ground = { float4(0, -600, 0, 599), White(), DIFF };
 static const int N = 4;
 static Sphere spheres[N];
 static Box box;
 
 void GroundHit(in Ray ray, inout RayHit hit) 
 {
-    PlaneHit(ground, ray, hit);
-	float2 v = 4 * (hit.pnc[0].xz - ground.pnc[0].xz);
-	hit.pnc[2] = ground.pnc[2] * (cos(v.x)*cos(v.y) > 0);
-    //SphereHit(ground, ray, hit);
-    //float2 v = { 4 * acos(hit.pnc[1].y) / -PI,
-//                  4 * atan2(hit.pnc[1].x, -hit.pnc[1].z) / -PI * 0.5f }; 
+    //PlaneHit(ground, ray, hit);
+	//float2 v = 4 * (hit.pnc[0].xz - ground.pnc[0].xz);
+	//hit.pnc[2] = ground.pnc[2] * (cos(v.x)*cos(v.y) > 0);
+    SphereHit(ground, ray, hit);
+    hit.pnc[0] += EPSILON * hit.pnc[1] * ground.centre.w;
+    float2 v = { 1440 * acos(hit.pnc[1].y) / -PI,
+                  45 * atan2(hit.pnc[1].x, -hit.pnc[1].z) / -PI * 0.5f }; 
     
-    //hit.pnc[2] = ground.color * (cos(v.x)*cos(v.y) > 0);    
+    hit.pnc[2] = ground.color * (cos(v.x)*cos(v.y) > 0);    
 }
 
 bool FindHit(inout State state)
@@ -312,10 +313,10 @@ State Init(in float2 uv)
 	spheres[3].color = float3(0.8f,0.2f,0.9f);
 	spheres[3].type = DIFF;
 	
-	box.pn[0] = float4(-0.5f,-0.4f,-1.0f,1);
-	box.pn[1] = float4(1,0,0,0.25f);
-	box.pn[2] = float4(0,1,0,0.25f);
-	box.pn[3] = float4(0,0,1,0.25f);
+	box.pn[0] = float4(-0.8f,-0.4f,-0.8f,1);
+	box.pn[1] = float4(normalize(float3(0,-0.3f,4)),0.25f);
+	box.pn[2] = float4(normalize(float3(-2.46,1.2,0.09)),0.25f);
+	box.pn[3] = float4(normalize(cross(box.pn[1].xyz, box.pn[2].xyz)),0.25f);
 	box.type = TRANS;
 	box.color = float3(0.1f,0.2f,0.9f);
     
@@ -373,6 +374,7 @@ void Trace(inout int ptr, inout float3 color, inout State current)
     }
     ++current.depth;
 }
+
 float2 _pixelOffset;
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
@@ -386,30 +388,12 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float3 color = Black();
     int stack_ptr = 0;
     /* ----Boilerplate---- */
-    //if (FindHit(current)) 
-    //{
-        //Shade(current);
-        //color += current.hit.pnc[2];
-    //}
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    Trace(stack_ptr, color, current);
-    
-    Trace(stack_ptr, color, current);
+    if (FindHit(current)) 
+    {
+        Shade(current);
+        color += current.hit.pnc[2];
+    }
+    //Trace(stack_ptr, color, current);
     
     
     Result[id.xy] = float4(color, 1);
