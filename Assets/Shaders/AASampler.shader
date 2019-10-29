@@ -1,4 +1,4 @@
-﻿Shader "Hidden/AAShader"
+﻿Shader "Hidden/AASampler"
 {
     Properties
     {

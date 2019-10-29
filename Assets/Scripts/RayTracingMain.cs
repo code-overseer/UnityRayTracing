@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Random = System.Random;
 
 public class RayTracingMain : MonoBehaviour
@@ -55,7 +56,7 @@ public class RayTracingMain : MonoBehaviour
 
         // Blit the result texture to the screen
         if (_addMaterial == null)
-            _addMaterial = new Material(Shader.Find("Hidden/AAShader"));
+            _addMaterial = new Material(Shader.Find("Hidden/AASampler"));
         _addMaterial.SetFloat("_Sample", _currentSample);
         Graphics.Blit(_target, destination, _addMaterial);
         _currentSample++;
