@@ -22,7 +22,7 @@ static State states[MAX_DEPTH - 1];
 bool FindHit(inout State state)
 {   
     BoxHit(box, state.ray, state.hit);
-    for (int i = 0; i < 1; ++i) 
+    for (int i = 0; i < 6; ++i) 
     {
         if (PlaneHit(planes[i], state.ray, state.hit))
         {

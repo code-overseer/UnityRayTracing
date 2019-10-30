@@ -350,7 +350,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 534669902}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -4}
+  m_LocalPosition: {x: 0, y: 0.75, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -368,7 +368,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8062cadb0401e41a1824e2fd890bfa2b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rtxShader: {fileID: 7200000, guid: 4bbdc3c8282654d10a0e9944e2b93fa8, type: 3}
+  rtxShader: {fileID: 7200000, guid: cb4b7c025395a4e30804c6044249f8a6, type: 3}
   skybox: {fileID: 2800000, guid: 051ba3d81068b4ce29a2eb548b71179b, type: 3}
 --- !u!114 &534669907
 MonoBehaviour:

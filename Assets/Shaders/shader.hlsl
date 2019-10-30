@@ -240,16 +240,38 @@ float3 UniformHemisphere(in float3 normal)
     float3 z = cross(x, normal);
     float2 r = float2(rnd(), rnd());
     float2 a = float2(sqrt(1 - r.x * r.x), 2 * PI * r.y);
+    
     float3 output = float3(a.x * cos(a.y), r.x, a.x * sin(a.y));
     output = float3(
         output.x * z.x + output.y * normal.x + output.z * x.x, 
         output.x * z.y + output.y * normal.y + output.z * x.y, 
         output.x * z.z + output.y * normal.z + output.z * x.z
     );
-    if (dot(normal, output) < 0) output = -output;
     
-    return output;  
+    return normalize(output);  
+}
 
+float3 CosineHemisphere(in float3 normal) 
+{
+    
+    float3 x;
+    if (abs(normal.x) > abs(normal.y)) 
+        x = normalize(float3(normal.z, 0, -normal.x)); 
+    else 
+        x = normalize(float3(0, -normal.z, normal.y));
+     
+    float3 z = cross(x, normal);
+    float2 r = float2(rnd(), rnd());
+    float2 a = float2(sqrt(r.x), 2 * PI * r.y);
+    
+    float3 output = float3(a.x * cos(a.y), sqrt(1 - r.x), a.x * sin(a.y));
+    output = float3(
+        output.x * z.x + output.y * normal.x + output.z * x.x, 
+        output.x * z.y + output.y * normal.y + output.z * x.y, 
+        output.x * z.z + output.y * normal.z + output.z * x.z
+    );
+    
+    return normalize(output);  
 }
 
 #endif

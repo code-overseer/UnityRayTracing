@@ -61,7 +61,8 @@ public class RayTracingMain : MonoBehaviour
 
         // Set the target and dispatch the compute shader
         rtxShader.SetTexture(0, "Result", _target);
-        rtxShader.SetVector("_pixelOffset", Vector2.one * 0.5f);
+        rtxShader.SetVector("_pixelOffset", new Vector2(UnityEngine.Random.Range(0.0f,0.5f), 
+            UnityEngine.Random.Range(0.0f,0.5f)));
         rtxShader.SetTexture(0, "_skybox", skybox);
         rtxShader.SetInt("SEED", Mathf.FloorToInt(UnityEngine.Random.value * 100));
 

@@ -9,8 +9,8 @@ int Current_Sample;
 SamplerState sampler_skybox;
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
-static const int MAX_DEPTH = 6;
-static const int SAMPLES = 4;
+static const int MAX_DEPTH = 5;
+static const int SAMPLES = 2;
 
 static Plane planes[6];
 static const int N = 2;
@@ -66,7 +66,7 @@ void Trace(inout int ptr, inout float3 color, inout State current)
     }
     
     current.ray.origin = current.hit.pos + current.hit.n * EPSILON;
-    current.ray.dir = UniformHemisphere(current.hit.n);
+    current.ray.dir = CosineHemisphere(current.hit.n);
     
     Push(ptr, current);
     ++current.kr_d_out[1];
@@ -82,7 +82,7 @@ State Init(in float2 uv)
     state.kr_d_out[1] = 0;
     state.kr_d_out[2] = 1;
     
-    source[0].pos = float3(0,1.9,0);
+    source[0].pos = float3(0,2.9,0);
     source[0].n = float4(0,-1, 0, 1);
     source[0].mat = CreateMaterial(Black(), 16 * float3(0.9f, 0.8f, 0.7f));
     
@@ -90,7 +90,7 @@ State Init(in float2 uv)
     source[1].n = float4(-1, 0, 0, 1);
     source[1].mat = CreateMaterial(Black(), 8 * float3(0.7f, 0.8f, 0.7f));
     
-    source[2].pos = float3(0,1.9,-2);
+    source[2].pos = float3(0,2.9,-2);
     source[2].n = float4(0, -1, 0, 0.7f);
     source[2].mat = CreateMaterial(Black(), 8 * float3(0.9f, 0.7f, 0.7f));
 
@@ -114,7 +114,7 @@ State Init(in float2 uv)
 	planes[0].mat.rho = White();
     planes[0].mat.eps = planes[0].mat.rho * KS;
 	
-	planes[1].pos = float3(0,2,0);
+	planes[1].pos = float3(0,3,0);
 	planes[1].n = float3(0,-1,0);
 	planes[1].mat = CreateMaterial(White(), Black());
 	
