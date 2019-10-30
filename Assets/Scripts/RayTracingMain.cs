@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Assertions.Comparers;
 using UnityEngine.Rendering;
 using Random = System.Random;
 
@@ -10,10 +11,10 @@ public class RayTracingMain : MonoBehaviour
     public ComputeShader rtxShader;
     public Texture skybox;
     //public bool monteCarlo;
-    
+    //private RenderTexture _previous;
     private RenderTexture _target;
     private Camera _camera;
-    private uint _currentSample = 0;
+    private int _currentSample = 0;
     private Material _addMaterial;
 
     private void Awake()
@@ -38,6 +39,19 @@ public class RayTracingMain : MonoBehaviour
     {
         SetShaderParameters();
         Render(destination);
+
+//        InitRenderTexture();
+//        rtxShader.SetTexture(0, "Result", _target);
+//        rtxShader.SetVector("_pixelOffset", Vector2.one * 0.5f);
+//        rtxShader.SetTexture(0, "Previous_Result", _previous);
+//        rtxShader.SetInt("SEED", Mathf.FloorToInt(UnityEngine.Random.value * 100));
+//        rtxShader.SetInt("Current_Sample", _currentSample);
+//        
+//        var threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
+//        var threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
+//        rtxShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
+//        Graphics.Blit(_target, destination);
+//        _currentSample++;
     }
     
     private void Render(RenderTexture destination)
@@ -47,9 +61,10 @@ public class RayTracingMain : MonoBehaviour
 
         // Set the target and dispatch the compute shader
         rtxShader.SetTexture(0, "Result", _target);
-        rtxShader.SetVector("_pixelOffset", UnityEngine.Random.insideUnitCircle);
+        rtxShader.SetVector("_pixelOffset", Vector2.one * 0.5f);
         rtxShader.SetTexture(0, "_skybox", skybox);
-        
+        rtxShader.SetInt("SEED", Mathf.FloorToInt(UnityEngine.Random.value * 100));
+
         var threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
         var threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
         rtxShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
@@ -67,11 +82,14 @@ public class RayTracingMain : MonoBehaviour
         if (_target != null && _target.width == Screen.width && _target.height == Screen.height) return;
         // Release render texture if we already have one
         if (_target != null)
+        {
             _target.Release();
-
+        }
+        
         // Get a render target for Ray Tracing
         _target = new RenderTexture(Screen.width, Screen.height, 0,
             RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear) {enableRandomWrite = true};
         _target.Create();
     }
+    
 }

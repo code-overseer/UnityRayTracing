@@ -7,8 +7,10 @@
     SubShader
     {
         // No culling or depth
-        Cull Off ZWrite Off ZTest Always Blend SrcAlpha OneMinusSrcAlpha
-
+        Cull Off ZWrite Off ZTest Always
+        BlendOp Add, LogicalSet 
+        Blend SrcAlpha OneMinusSrcAlpha
+        
         Pass
         {
             CGPROGRAM

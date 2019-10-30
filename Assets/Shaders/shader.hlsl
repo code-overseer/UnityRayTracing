@@ -1,16 +1,13 @@
-// Upgrade NOTE: replaced '_CameraToWorld' with 'unity_CameraToWorld'
-
-// Upgrade NOTE: replaced '_CameraToWorld' with 'unity_CameraToWorld'
-
 #if !defined(SHADER_H)
 #define SHADER_H
+
 static const int DIFF = 0;
 static const int REFL = 1;
 static const int TRANS = 2;
 static const float PI = 3.14159265359f;
 static const float EPSILON = 1e-5f;
 static const float MAX_DIST = 1e+5f;
-static const float KS = 0.1f;
+static const float KS = 0.00f;
 
 struct Material
 {
@@ -223,11 +220,12 @@ RayHit CreateRayHit()
     return hit;
 }
 
+int SEED;
+static float helper = 1; 
 float rnd()
 {
-    static int seed = 0;
-	seed = int(fmod(float(seed)*1364.0+626.0, 509.0));
-	return float(seed)/509.0;
+	SEED = int(fmod(float(SEED)*1364.0+626.0 * helper, 509.0));
+	return float(SEED)/509.0;
 }
 
 float3 UniformHemisphere(in float3 normal) 
@@ -248,6 +246,7 @@ float3 UniformHemisphere(in float3 normal)
         output.x * z.y + output.y * normal.y + output.z * x.y, 
         output.x * z.z + output.y * normal.z + output.z * x.z
     );
+    if (dot(normal, output) < 0) output = -output;
     
     return output;  
 
