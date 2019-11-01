@@ -179,23 +179,6 @@ struct State
     float3 kr_d_out;
 };
 
-struct Stack
-{
-    State current;
-    uint ptr;
-}
-
-void Push(inout Stack stack) {
-    if (stack.ptr >= MAX_DEPTH - 1) return;
-    stack.states[++stack.ptr] = stack.top;
-    stack.top = stack.states[stack.ptr];
-}
-
-void Pop(inout Stack stack) {
-    if (!stack.ptr) return;
-    stack.top = stack.states[--stack.ptr];
-}
-
 float3 Black()
 {
     return float3(0.0f, 0.0f, 0.0f);

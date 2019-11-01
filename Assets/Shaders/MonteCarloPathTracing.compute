@@ -5,32 +5,42 @@
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 RWTexture2D<float4> Result;
+StructuredBuffer<Plane> planes;
+StructuredBuffer<Sphere> spheres;
+StructuredBuffer<Box> boxes;
+StructuredBuffer<Disc> discs;
 
-int Current_Sample;
-SamplerState sampler_skybox;
 float4x4 _CameraToWorld;
-float4x4 _CameraInverseProjection;
+float4x4 _CameraInverseProjection; 
 static const int MAX_DEPTH = 5;
 static const int SAMPLES = 2;
-
-static Plane planes[6];
-static const int N = 2;
-static Sphere spheres[N];
-static Box box;
-static Disc source[3];
 static State states[MAX_DEPTH - 1];
 
 bool FindHit(inout State state)
-{    
+{   
+    uint n, stride;
     state.hit.dist_type[0] = 100000.0f;
-    DiscHit(source[0], state.ray, state.hit);
-    //DiscHit(source[1], state.ray, state.hit);
-    //DiscHit(source[2], state.ray, state.hit);
-    for (int i = 0; i < 5; ++i) 
-	{
-	    PlaneHit(planes[i], state.ray, state.hit);
-	}
-	BoxHit(box, state.ray, state.hit);
+    spheres.GetDimensions(n, stride);
+    for (uint i = 0; i < n; ++i) 
+    {
+        SphereHit(spheres[i], state.ray, state.hit);
+    }
+    discs.GetDimensions(n, stride);
+    for (uint j = 0; j < n; ++j) 
+    {
+        DiscHit(discs[j], state.ray, state.hit);
+    }
+    planes.GetDimensions(n, stride);
+    for (uint k = 0; k < n; ++k) 
+    {
+        PlaneHit(planes[k], state.ray, state.hit);
+    }
+    boxes.GetDimensions(n, stride);
+    for (uint l = 0; l < n; ++l) 
+    {
+        BoxHit(boxes[l], state.ray, state.hit);
+    }
+    
     state.kr_d_out.z = dot(state.ray.dir, state.hit.n) < 0;
 	return state.hit.dist_type[0] < 100000.0f;
 }
@@ -43,6 +53,7 @@ void Push(inout int ptr, in State current)
 
 void Pop(inout int ptr, out State current) 
 {
+    if (!ptr) return;
     current = states[--ptr];
 }
 
@@ -66,10 +77,8 @@ void Trace(inout int ptr, inout float3 color, inout State current)
         }
         return;
     }
-    
     current.ray.origin = current.hit.pos + current.hit.n * EPSILON;
     current.ray.dir = CosineHemisphere(current.hit.n);
-    
     Push(ptr, current);
     ++current.kr_d_out[1];
 }
@@ -84,63 +93,10 @@ State Init(in float2 uv)
     state.kr_d_out[1] = 0;
     state.kr_d_out[2] = 1;
     
-    source[0].pos = float3(0,2.9,-1);
-    source[0].n = float4(0,-1, 0, 1);
-    source[0].mat = CreateMaterial(Black(), 5*float3(0.2f, 0.5f, 0.8f));
-    
-    source[1].pos = float3(2.95, 0, 0);
-    source[1].n = float4(-1, 0, 0, 1);
-    source[1].mat = CreateMaterial(Black(), 8*float3(0.7f, 0.8f, 0.7f));
-    
-    source[2].pos = float3(0,2.9,-2);
-    source[2].n = float4(0, -1, 0, 0.7f);
-    source[2].mat = CreateMaterial(Black(), 8*float3(0.9f, 0.7f, 0.7f));
-
-    spheres[0].centre   = float4(0.3f, -0.45f, 0.6f, 0.5f);
-	spheres[0].mat.rho = White();
-	spheres[0].mat.eps = spheres[0].mat.rho * KS;
-	
-    spheres[1].centre   = float4(0.7f, -0.6f, -1.0f, 0.25f);
-	spheres[1].mat.rho = float3(0.3f,0.1f,0.2f);
-	spheres[1].mat.eps = spheres[1].mat.rho * KS;
-	
-	box.pn[0] = float4(0,0,-1,1);
-	box.pn[1] = float4(normalize(float3(-3,2,-1)), 0.5f);
-	box.pn[2] = float4(normalize(cross(box.pn[1].xyz, float3(1,0,0))),0.5f);
-	box.pn[3] = float4(normalize(cross(box.pn[1].xyz, box.pn[2].xyz)),0.5f);
-	box.mat.rho = float3(0.1f,0.2f,0.9f);
-	box.mat.eps = box.mat.rho * KS;
-	
-	planes[0].pos = float3(0,-1,0);
-	planes[0].n = float3(0,1,0);
-	planes[0].mat.rho = White();
-    planes[0].mat.eps = Black();
-	
-	planes[1].pos = float3(0,3,0);
-	planes[1].n = float3(0,-1,0);
-	planes[1].mat = CreateMaterial(float3(1,1,0), Black());
-	
-	planes[2].pos = float3(-3,0,0);
-	planes[2].n = float3(1,0,0);
-	planes[2].mat = CreateMaterial(float3(0,1,0), float3(0,0,0));
-	
-	planes[3].pos = float3(3,0,0);
-	planes[3].n = float3(-1,0,0);
-	planes[3].mat = CreateMaterial(float3(1,0,0), Black());
-	
-	planes[4].pos = float3(0,0,2);
-	planes[4].n = float3(0,0,-1);
-	planes[4].mat = CreateMaterial(White(), Black());
-	
-	planes[5].pos = float3(0,0,-6);
-	planes[5].n = float3(0,0,1);
-	planes[5].mat = CreateMaterial(White(), Black());
-    
     return state;
 }
 
 float2 _pixelOffset;
-
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
@@ -149,6 +105,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float2 uv = float2((id.xy + _pixelOffset) / float2(width, height) * 2.0f - 1.0f);
     float2 noise = frac(sin(dot(uv + float2(rnd(),rnd())*length(uv),float2(30*rnd(),160*rnd()))) * 43758.5453);
     helper = length(noise);
+    
     float3 pixel = Black();
     State current = Init(uv);
     uint count = 2u << (MAX_DEPTH - 1);
@@ -162,7 +119,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         }
         pixel += color;
     }
-    float a = 1.0f/(Current_Sample + 1);
     
     
     Result[id.xy] = float4(pixel / SAMPLES, 1);
