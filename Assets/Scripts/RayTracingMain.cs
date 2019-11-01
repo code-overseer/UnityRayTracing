@@ -5,7 +5,9 @@ using UnityEngine.Assertions.Comparers;
 using UnityEngine.Rendering;
 using Random = System.Random;
 
-public class RayTracingMain : MonoBehaviour
+namespace UnityRayTracing
+{
+    public class RayTracingMain : MonoBehaviour
 {
     // Start is called before the first frame update
     public ComputeShader rtxShader;
@@ -15,7 +17,7 @@ public class RayTracingMain : MonoBehaviour
     private RenderTexture _target;
     private Camera _camera;
     private int _currentSample = 0;
-    private Material _addMaterial;
+    private UnityEngine.Material _addMaterial;
 
     private void Awake()
     {
@@ -72,7 +74,7 @@ public class RayTracingMain : MonoBehaviour
 
         // Blit the result texture to the screen
         if (_addMaterial == null)
-            _addMaterial = new Material(Shader.Find("Hidden/AASampler"));
+            _addMaterial = new UnityEngine.Material(Shader.Find("Hidden/AASampler"));
         _addMaterial.SetFloat("_Sample", _currentSample);
         Graphics.Blit(_target, destination, _addMaterial);
         _currentSample++;
@@ -93,4 +95,6 @@ public class RayTracingMain : MonoBehaviour
         _target.Create();
     }
     
+}    
 }
+

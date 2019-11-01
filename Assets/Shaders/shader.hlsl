@@ -9,6 +9,7 @@ static const float EPSILON = 1e-5f;
 static const float MAX_DIST = 1e+5f;
 static const float KS = 0.00f;
 
+
 struct Material
 {
     float3 eps;
@@ -177,6 +178,23 @@ struct State
     Ray ray;
     float3 kr_d_out;
 };
+
+struct Stack
+{
+    State current;
+    uint ptr;
+}
+
+void Push(inout Stack stack) {
+    if (stack.ptr >= MAX_DEPTH - 1) return;
+    stack.states[++stack.ptr] = stack.top;
+    stack.top = stack.states[stack.ptr];
+}
+
+void Pop(inout Stack stack) {
+    if (!stack.ptr) return;
+    stack.top = stack.states[--stack.ptr];
+}
 
 float3 Black()
 {

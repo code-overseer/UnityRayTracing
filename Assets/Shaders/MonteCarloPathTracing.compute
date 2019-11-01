@@ -5,6 +5,7 @@
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 RWTexture2D<float4> Result;
+
 int Current_Sample;
 SamplerState sampler_skybox;
 float4x4 _CameraToWorld;
@@ -21,9 +22,10 @@ static State states[MAX_DEPTH - 1];
 
 bool FindHit(inout State state)
 {    
+    state.hit.dist_type[0] = 100000.0f;
     DiscHit(source[0], state.ray, state.hit);
-    DiscHit(source[1], state.ray, state.hit);
-    DiscHit(source[2], state.ray, state.hit);
+    //DiscHit(source[1], state.ray, state.hit);
+    //DiscHit(source[2], state.ray, state.hit);
     for (int i = 0; i < 5; ++i) 
 	{
 	    PlaneHit(planes[i], state.ray, state.hit);
@@ -82,17 +84,17 @@ State Init(in float2 uv)
     state.kr_d_out[1] = 0;
     state.kr_d_out[2] = 1;
     
-    source[0].pos = float3(0,2.9,0);
+    source[0].pos = float3(0,2.9,-1);
     source[0].n = float4(0,-1, 0, 1);
-    source[0].mat = CreateMaterial(Black(), 16 * float3(0.9f, 0.8f, 0.7f));
+    source[0].mat = CreateMaterial(Black(), 5*float3(0.2f, 0.5f, 0.8f));
     
-    source[1].pos = float3(2.95, 0, -1);
+    source[1].pos = float3(2.95, 0, 0);
     source[1].n = float4(-1, 0, 0, 1);
-    source[1].mat = CreateMaterial(Black(), 8 * float3(0.7f, 0.8f, 0.7f));
+    source[1].mat = CreateMaterial(Black(), 8*float3(0.7f, 0.8f, 0.7f));
     
     source[2].pos = float3(0,2.9,-2);
     source[2].n = float4(0, -1, 0, 0.7f);
-    source[2].mat = CreateMaterial(Black(), 8 * float3(0.9f, 0.7f, 0.7f));
+    source[2].mat = CreateMaterial(Black(), 8*float3(0.9f, 0.7f, 0.7f));
 
     spheres[0].centre   = float4(0.3f, -0.45f, 0.6f, 0.5f);
 	spheres[0].mat.rho = White();
@@ -112,19 +114,19 @@ State Init(in float2 uv)
 	planes[0].pos = float3(0,-1,0);
 	planes[0].n = float3(0,1,0);
 	planes[0].mat.rho = White();
-    planes[0].mat.eps = planes[0].mat.rho * KS;
+    planes[0].mat.eps = Black();
 	
 	planes[1].pos = float3(0,3,0);
 	planes[1].n = float3(0,-1,0);
-	planes[1].mat = CreateMaterial(White(), Black());
+	planes[1].mat = CreateMaterial(float3(1,1,0), Black());
 	
 	planes[2].pos = float3(-3,0,0);
 	planes[2].n = float3(1,0,0);
-	planes[2].mat = CreateMaterial(float3(0,1,0), float3(0,KS,0));
+	planes[2].mat = CreateMaterial(float3(0,1,0), float3(0,0,0));
 	
 	planes[3].pos = float3(3,0,0);
 	planes[3].n = float3(-1,0,0);
-	planes[3].mat = CreateMaterial(White(), Black());
+	planes[3].mat = CreateMaterial(float3(1,0,0), Black());
 	
 	planes[4].pos = float3(0,0,2);
 	planes[4].n = float3(0,0,-1);
@@ -148,18 +150,20 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float2 noise = frac(sin(dot(uv + float2(rnd(),rnd())*length(uv),float2(30*rnd(),160*rnd()))) * 43758.5453);
     helper = length(noise);
     float3 pixel = Black();
-    for (int i = 0; i < SAMPLES; ++i) 
-    {
+    State current = Init(uv);
+    uint count = 2u << (MAX_DEPTH - 1);
+    for (int i = 0; i < SAMPLES; ++i) {
         int ptr = 0;
         State current = Init(uv);
         float3 color = Black();
-        do 
+        for (uint j = 0; j < count; ++j) 
         {
             Trace(ptr, color, current);
-        } while (ptr > 0);
+        }
         pixel += color;
     }
     float a = 1.0f/(Current_Sample + 1);
+    
     
     Result[id.xy] = float4(pixel / SAMPLES, 1);
     

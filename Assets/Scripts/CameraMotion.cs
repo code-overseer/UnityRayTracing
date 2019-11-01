@@ -1,7 +1,9 @@
 ﻿using System;
 using UnityEngine;
 
-public class CameraMotion : MonoBehaviour
+namespace UnityRayTracing
+{
+    public class CameraMotion : MonoBehaviour
 {
     private Transform _cameraTransform;
 
@@ -82,3 +84,5 @@ public class CameraMotion : MonoBehaviour
     #endregion
 
 }
+}
+

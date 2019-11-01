@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using UnityEditor;
 using UnityEngine;
+using UnityRayTracing;
 
 namespace Editor
 {
@@ -20,61 +21,72 @@ namespace Editor
                 return _camera;
             }
         }
+
+        private static GUILayoutOption MatrixFieldWidth => GUILayout.Width(EditorGUIUtility.currentViewWidth * 0.15f);
+        private static float SideBorderSpace => EditorGUIUtility.currentViewWidth * 0.125f;
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
             var ctw = CameraObj.cameraToWorldMatrix;
             var cip = CameraObj.projectionMatrix.inverse;
             GUILayout.Label ("Camera To World: ");
+            
             GUILayout.BeginHorizontal();
-            GUILayout.TextArea($"{ctw.m00:0.000}");
-            GUILayout.TextArea($"{ctw.m10:0.000}");
-            GUILayout.TextArea($"{ctw.m20:0.000}");
-            GUILayout.TextArea($"{ctw.m30:0.000}");
+            GUILayout.Space(SideBorderSpace);
+            GUILayout.TextArea($"{ctw.GetRow(0).x:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(0).y:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(0).z:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(0).w:0.000}", MatrixFieldWidth);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GUILayout.TextArea($"{ctw.m01:0.000}");
-            GUILayout.TextArea($"{ctw.m11:0.000}");
-            GUILayout.TextArea($"{ctw.m21:0.000}");
-            GUILayout.TextArea($"{ctw.m31:0.000}");
+            GUILayout.Space(SideBorderSpace);
+            GUILayout.TextArea($"{ctw.GetRow(1).x:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(1).y:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(1).z:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(1).w:0.000}", MatrixFieldWidth);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GUILayout.TextArea($"{ctw.m02:0.000}");
-            GUILayout.TextArea($"{ctw.m12:0.000}");
-            GUILayout.TextArea($"{ctw.m22:0.000}");
-            GUILayout.TextArea($"{ctw.m32:0.000}");
+            GUILayout.Space(SideBorderSpace);
+            GUILayout.TextArea($"{ctw.GetRow(2).x:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(2).y:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(2).z:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(2).w:0.000}", MatrixFieldWidth);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GUILayout.TextArea($"{ctw.m03:0.000}");
-            GUILayout.TextArea($"{ctw.m13:0.000}");
-            GUILayout.TextArea($"{ctw.m23:0.000}");
-            GUILayout.TextArea($"{ctw.m33:0.000}");
+            GUILayout.Space(SideBorderSpace);
+            GUILayout.TextArea($"{ctw.GetRow(3).x:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(3).y:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(3).z:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{ctw.GetRow(3).w:0.000}", MatrixFieldWidth);
             GUILayout.EndHorizontal();
-            GUILayout.Space(10);
             GUILayout.Label ("Inverse Projection: ");
             GUILayout.BeginHorizontal();
-            GUILayout.TextArea($"{cip.m00:0.000}");
-            GUILayout.TextArea($"{cip.m10:0.000}");
-            GUILayout.TextArea($"{cip.m20:0.000}");
-            GUILayout.TextArea($"{cip.m30:0.000}");
+            GUILayout.Space(SideBorderSpace);
+            GUILayout.TextArea($"{cip.GetRow(0).x:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(0).y:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(0).z:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(0).w:0.000}", MatrixFieldWidth);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GUILayout.TextArea($"{cip.m01:0.000}");
-            GUILayout.TextArea($"{cip.m11:0.000}");
-            GUILayout.TextArea($"{cip.m21:0.000}");
-            GUILayout.TextArea($"{cip.m31:0.000}");
+            GUILayout.Space(SideBorderSpace);
+            GUILayout.TextArea($"{cip.GetRow(1).x:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(1).y:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(1).z:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(1).w:0.000}", MatrixFieldWidth);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GUILayout.TextArea($"{cip.m02:0.000}");
-            GUILayout.TextArea($"{cip.m12:0.000}");
-            GUILayout.TextArea($"{cip.m22:0.000}");
-            GUILayout.TextArea($"{cip.m32:0.000}");
+            GUILayout.Space(SideBorderSpace);
+            GUILayout.TextArea($"{cip.GetRow(2).x:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(2).y:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(2).z:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(2).w:0.000}", MatrixFieldWidth);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GUILayout.TextArea($"{cip.m03:0.000}");
-            GUILayout.TextArea($"{cip.m13:0.000}");
-            GUILayout.TextArea($"{cip.m23:0.000}");
-            GUILayout.TextArea($"{cip.m33:0.000}");
+            GUILayout.Space(SideBorderSpace);
+            GUILayout.TextArea($"{cip.GetRow(3).x:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(3).y:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(3).z:0.000}", MatrixFieldWidth);
+            GUILayout.TextArea($"{cip.GetRow(3).w:0.000}", MatrixFieldWidth);
             GUILayout.EndHorizontal();
 
         }
