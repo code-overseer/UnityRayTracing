@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace UnityRayTracing
 {
-    internal struct Material
+    public struct Material
     {
         public Vector3 emissive;
         public Vector3 reflective;
@@ -14,9 +14,15 @@ namespace UnityRayTracing
             emissive = eta;
             reflective = rho;
         }
+        
+        public Material(Color eta, Color rho)
+        {
+            emissive = new Vector3(eta.r, eta.g, eta.b);
+            reflective = new Vector3(rho.r, rho.g, rho.b);
+        }
     };
 
-    internal struct Plane
+    public struct Plane
     {
         public Vector3 pos;
         public Vector3 n;
@@ -29,7 +35,7 @@ namespace UnityRayTracing
         }
     };
 
-    internal struct Sphere
+    public struct Sphere
     {
         public Vector4 centre;
         public Material mat;
@@ -41,7 +47,7 @@ namespace UnityRayTracing
         }
     };
 
-    internal struct Box
+    public struct Box
     {
         public Matrix4x4 pos_n;
         public Material mat;
@@ -53,7 +59,7 @@ namespace UnityRayTracing
         }
     };
 
-    internal struct Disc
+    public struct Disc
     {
         public Vector3 pos;
         public Vector4 n;
@@ -67,7 +73,7 @@ namespace UnityRayTracing
         }
     };
     
-    internal struct Quad
+    public struct Quad
     {
         public Vector4 pos;
         public Vector4 n;

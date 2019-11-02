@@ -12,13 +12,8 @@ namespace UnityRayTracing
         // Start is called before the first frame update
         public ComputeShader rtxShader;
         public Texture skybox;
-        public Transform[] planes;
-        public Transform[] spheres;
-        public Transform[] boxes;
-        public Transform[] quads;
-        public Transform[] discs;
-        
-        
+
+
         private RenderTexture _target;
         private Camera _camera;
         private int _currentSample = 0;

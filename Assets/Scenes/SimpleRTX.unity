@@ -200,19 +200,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!135 &262078003
-SphereCollider:
+--- !u!114 &262078003
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 262078002}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &262078004
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -223,7 +225,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -370,21 +372,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rtxShader: {fileID: 7200000, guid: cb4b7c025395a4e30804c6044249f8a6, type: 3}
   skybox: {fileID: 2800000, guid: 051ba3d81068b4ce29a2eb548b71179b, type: 3}
-  planes:
-  - {fileID: 843952218}
-  - {fileID: 1162175575}
-  - {fileID: 1863304286}
-  - {fileID: 1556735480}
-  - {fileID: 1624658788}
-  spheres:
-  - {fileID: 1023464908}
-  - {fileID: 262078006}
-  - {fileID: 1482448095}
-  - {fileID: 1273249842}
-  boxes:
-  - {fileID: 1955840697}
-  quads: []
-  discs: []
 --- !u!114 &534669907
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -416,20 +403,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!64 &843952215
-MeshCollider:
+--- !u!114 &843952215
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 843952214}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Convex: 0
-  m_CookingOptions: 14
-  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &843952216
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -440,7 +428,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -508,19 +496,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!135 &1023464905
-SphereCollider:
+--- !u!114 &1023464905
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1023464904}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &1023464906
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -531,7 +521,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -599,20 +589,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!64 &1162175572
-MeshCollider:
+--- !u!114 &1162175572
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1162175571}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Convex: 0
-  m_CookingOptions: 14
-  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &1162175573
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -623,7 +614,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -691,19 +682,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!135 &1273249839
-SphereCollider:
+--- !u!114 &1273249839
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1273249838}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &1273249840
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -714,7 +707,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -775,6 +768,7 @@ GameObject:
   - component: {fileID: 1465257965}
   - component: {fileID: 1465257964}
   - component: {fileID: 1465257963}
+  - component: {fileID: 1465257967}
   m_Layer: 0
   m_Name: Quad
   m_TagString: Untagged
@@ -782,20 +776,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!64 &1465257963
-MeshCollider:
+--- !u!114 &1465257963
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1465257962}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Convex: 0
-  m_CookingOptions: 14
-  m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &1465257964
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -806,7 +801,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -855,6 +850,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+--- !u!114 &1465257967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1465257962}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!1 &1482448091
 GameObject:
   m_ObjectHideFlags: 0
@@ -874,19 +884,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!135 &1482448092
-SphereCollider:
+--- !u!114 &1482448092
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1482448091}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &1482448093
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -897,7 +909,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -965,20 +977,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!64 &1556735477
-MeshCollider:
+--- !u!114 &1556735477
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1556735476}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Convex: 0
-  m_CookingOptions: 14
-  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &1556735478
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -989,7 +1002,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -1057,20 +1070,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!64 &1624658785
-MeshCollider:
+--- !u!114 &1624658785
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1624658784}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Convex: 0
-  m_CookingOptions: 14
-  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &1624658786
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1081,7 +1095,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -1149,20 +1163,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!64 &1863304283
-MeshCollider:
+--- !u!114 &1863304283
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1863304282}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Convex: 0
-  m_CookingOptions: 14
-  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &1863304284
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1173,7 +1188,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -1241,19 +1256,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!65 &1955840694
-BoxCollider:
+--- !u!114 &1955840694
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1955840693}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95ed0879f334a54b1045b5d75bf74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 0
+  emissive: {r: 0, g: 0, b: 0, a: 0}
+  reflective: {r: 0, g: 0, b: 0, a: 0}
 --- !u!23 &1955840695
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1264,7 +1281,7 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
+  m_DynamicOccludee: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
