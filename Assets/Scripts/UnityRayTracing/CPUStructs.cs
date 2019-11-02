@@ -1,4 +1,7 @@
 using UnityEngine;
+// ReSharper disable InconsistentNaming
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable NotAccessedField.Global
 
 namespace UnityRayTracing
 {
