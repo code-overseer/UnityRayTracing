@@ -5,44 +5,94 @@
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 RWTexture2D<float4> Result;
-StructuredBuffer<Plane> planes;
-StructuredBuffer<Sphere> spheres;
-StructuredBuffer<Box> boxes;
-StructuredBuffer<Disc> discs;
-
+StructuredBuffer<Plane> _Planes;
+StructuredBuffer<Box> _Boxes;
+StructuredBuffer<Sphere> _Spheres;
+StructuredBuffer<Disc> _Discs;
+StructuredBuffer<Quad> _Quads;
+StructuredBuffer<int> sizes;
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection; 
+int _Seed;
+float2 _PixelOffset;
+
 static const int MAX_DEPTH = 5;
 static const int SAMPLES = 2;
 static State states[MAX_DEPTH - 1];
 
+
+static float helper = 1; 
+float rnd()
+{
+	_Seed = int(fmod(float(_Seed)*1364.0+626.0 * helper, 509.0));
+	return float(_Seed)/509.0;
+}
+
+float3 UniformHemisphere(in float3 normal) 
+{
+    float3 x, z; 
+    CreateCoordinateSystem(normal, x, z);
+    float2 r = float2(rnd(), rnd());
+    float2 a = float2(sqrt(1 - r.x * r.x), 2 * PI * r.y);
+    
+    float3 output = float3(a.x * cos(a.y), r.x, a.x * sin(a.y));
+    output = float3(
+        output.x * z.x + output.y * normal.x + output.z * x.x, 
+        output.x * z.y + output.y * normal.y + output.z * x.y, 
+        output.x * z.z + output.y * normal.z + output.z * x.z
+    );
+    
+    return normalize(output);  
+}
+
+float3 CosineHemisphere(in float3 normal) 
+{
+    float3 x, z; 
+    CreateCoordinateSystem(normal, x, z);
+    float2 r = float2(rnd(), rnd());
+    float2 a = float2(sqrt(r.x), 2 * PI * r.y);
+    
+    float3 output = float3(a.x * cos(a.y), sqrt(1 - r.x), a.x * sin(a.y));
+    output = float3(
+        output.x * z.x + output.y * normal.x + output.z * x.x, 
+        output.x * z.y + output.y * normal.y + output.z * x.y, 
+        output.x * z.z + output.y * normal.z + output.z * x.z
+    );
+    
+    return normalize(output);  
+}
+
 bool FindHit(inout State state)
 {   
-    uint n, stride;
-    state.hit.dist_type[0] = 100000.0f;
-    spheres.GetDimensions(n, stride);
-    for (uint i = 0; i < n; ++i) 
+    state.hit.dist = 100000.0f;
+    int n = sizes[PLANE];
+    for (int k = 0; k < n; ++k) 
     {
-        SphereHit(spheres[i], state.ray, state.hit);
+        PlaneHit(_Planes[k], state.ray, state.hit);
     }
-    discs.GetDimensions(n, stride);
-    for (uint j = 0; j < n; ++j) 
+    n = sizes[BOX];
+    for (int l = 0; l < n; ++l) 
     {
-        DiscHit(discs[j], state.ray, state.hit);
+        BoxHit(_Boxes[l], state.ray, state.hit);
     }
-    planes.GetDimensions(n, stride);
-    for (uint k = 0; k < n; ++k) 
+    n = sizes[SPHERE];
+    for (int i = 0; i < n; ++i) 
     {
-        PlaneHit(planes[k], state.ray, state.hit);
+        SphereHit(_Spheres[i], state.ray, state.hit);
     }
-    boxes.GetDimensions(n, stride);
-    for (uint l = 0; l < n; ++l) 
+    n = sizes[DISC];
+    for (int j = 0; j < n; ++j) 
     {
-        BoxHit(boxes[l], state.ray, state.hit);
+        DiscHit(_Discs[j], state.ray, state.hit);
+    }
+    n = sizes[QUAD];
+    for (int m = 0; m < n; ++m) 
+    {
+        QuadHit(_Quads[m], state.ray, state.hit);
     }
     
     state.kr_d_out.z = dot(state.ray.dir, state.hit.n) < 0;
-	return state.hit.dist_type[0] < 100000.0f;
+	return state.hit.dist < 100000.0f;
 }
 
 void Push(inout int ptr, in State current) 
@@ -69,7 +119,6 @@ void Trace(inout int ptr, inout float3 color, inout State current)
         }
         else if (ptr > 0) 
         {   
-            float d = current.hit.dist_type[0];
             Pop(ptr, current);
             float cosi = dot(current.ray.dir, current.hit.n);
             color = current.hit.mat.eps + 2 * cosi * current.hit.mat.rho * color;
@@ -96,13 +145,16 @@ State Init(in float2 uv)
     return state;
 }
 
-float2 _pixelOffset;
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     uint width, height;
     Result.GetDimensions(width, height);
-    float2 uv = float2((id.xy + _pixelOffset) / float2(width, height) * 2.0f - 1.0f);
+    _Seed = _Seed | id.x;
+    _Seed = _Seed | id.y;
+    _Seed = _Seed & 0x7FFFFFFF;
+    float2 uv = float2((id.xy + _PixelOffset) / float2(width, height) * 2.0f - 1.0f);
+    helper = length(uv);
     float2 noise = frac(sin(dot(uv + float2(rnd(),rnd())*length(uv),float2(30*rnd(),160*rnd()))) * 43758.5453);
     helper = length(noise);
     

@@ -5,6 +5,16 @@ using UnityEngine;
 
 namespace UnityRayTracing
 {
+    public static class Strides
+    {
+        public const int material = 24;
+        public const int plane = 24 + material;
+        public const int sphere = 16 + material;
+        public const int box = 16 * 4 + material;
+        public const int disc = 12 + 16 + material;
+        public const int quad = 16 + 16 + material;
+
+    }
     public struct Material
     {
         public Vector3 emissive;
@@ -21,7 +31,7 @@ namespace UnityRayTracing
             reflective = new Vector3(rho.r, rho.g, rho.b);
         }
     };
-
+    
     public struct Plane
     {
         public Vector3 pos;

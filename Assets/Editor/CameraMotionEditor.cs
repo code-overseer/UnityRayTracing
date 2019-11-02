@@ -2,6 +2,7 @@
 using UnityEditor;
 using UnityEngine;
 using UnityRayTracing;
+using Material = UnityRayTracing.Material;
 
 namespace Editor
 {
@@ -29,6 +30,7 @@ namespace Editor
             base.OnInspectorGUI();
             var ctw = CameraObj.cameraToWorldMatrix;
             var cip = CameraObj.projectionMatrix.inverse;
+
             GUILayout.Label ("Camera To World: ");
             
             GUILayout.BeginHorizontal();

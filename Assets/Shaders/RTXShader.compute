@@ -1,4 +1,5 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
+/*
 #pragma kernel CSMain
 #include "shader.hlsl"
 
@@ -210,7 +211,7 @@ float2 _pixelOffset;
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    /* ----Boilerplate---- */
+
     uint width, height;
     Result.GetDimensions(width, height);
     float2 uv = float2((id.xy + _pixelOffset) / float2(width, height) * 2.0f - 1.0f);
@@ -218,7 +219,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     
     float3 color = Black();
     int stack_ptr = 0;
-    /* ----Boilerplate---- */
+
     //if (FindHit(current)) 
     //{
         //Shade(current);
@@ -233,3 +234,4 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     
     Result[id.xy] = float4(color, 1);
 }
+*/

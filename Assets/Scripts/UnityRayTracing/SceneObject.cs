@@ -24,11 +24,21 @@ namespace UnityRayTracing
         public static List<Plane> Planes;
         public static List<Disc> Discs;
 
+        private void Awake()
+        {
+            MakeSphere();
+            MakeBox();
+            MakePlane();
+            MakeQuad();
+            MakeDisc();
+            gameObject.GetComponent<MeshRenderer>().enabled = false;
+        }
+        
         private void MakeSphere()
         {
             if (type != ObjectType.Sphere) return;
             var t = transform;
-            Spheres.Add(new Sphere(BuildVec4(t.position, t.localScale.x), 
+            Spheres.Add(new Sphere(BuildVec4(t.position, t.localScale.x * 0.5f), 
                 new Material(emissive, reflective)));
         }
         
@@ -37,7 +47,7 @@ namespace UnityRayTracing
             if (type != ObjectType.Box) return;
             var t = transform;
             var pos = BuildVec4(t.position, 1);
-            var scale = t.localScale;
+            var scale = t.localScale * 0.5f;
             var x = BuildVec4(t.right, scale.x);
             var y = BuildVec4(t.up, scale.y);
             var z = BuildVec4(t.forward, scale.z);
@@ -57,18 +67,20 @@ namespace UnityRayTracing
         {
             if (type != ObjectType.Quad) return;
             var t = transform;
-            var scale = t.localScale;
+            var scale = t.localScale * 0.5f;
             var q = new Quad(BuildVec4(t.position, scale.x),
                 BuildVec4(t.forward, scale.y), 
                 new Material(emissive, reflective));
-            Quads.Add(new Quad());
+            Quads.Add(q);
         }
 
         private void MakeDisc()
         {
-            if (type != ObjectType.Quad) return;
+            if (type != ObjectType.Disc) return;
             var t = transform;
-            var scale = t.localScale;
+            var scale = t.localScale * 0.5f;
+            var d = new Disc(t.position, BuildVec4(t.up, scale.x), new Material(emissive, reflective));
+            Discs.Add(d);
         }
 
         private static Vector4 BuildVec4(in Vector3 v, float w)

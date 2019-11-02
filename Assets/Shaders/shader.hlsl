@@ -9,6 +9,12 @@ static const float EPSILON = 1e-5f;
 static const float MAX_DIST = 1e+5f;
 static const float KS = 0.00f;
 
+#define PLANE 0
+#define BOX 1
+#define SPHERE 2
+#define DISC 3
+#define QUAD 4
+
 
 struct Material
 {
@@ -41,7 +47,7 @@ struct RayHit
     float3 pos;
     float3 n;
     Material mat;
-    float2 dist_type;
+    float dist;
 };
 
 struct Plane 
@@ -49,19 +55,17 @@ struct Plane
     float3 pos;
     float3 n;
     Material mat;
-    int type;
 };
 
 
 bool PlaneHit(in Plane pl, in Ray ray, inout RayHit hit) 
 {
     float t = dot(pl.pos - ray.origin, pl.n) / dot(ray.dir, pl.n);
-    if (t < 0 || t > hit.dist_type[0]) return false;
+    if (t < 0 || t > hit.dist) return false;
     hit.pos = ray.origin + t * ray.dir;
     hit.n = pl.n;
     hit.mat = pl.mat;
-    hit.dist_type[0] = t;
-    hit.dist_type[1] = pl.type; 
+    hit.dist = t; 
     return true;
 }
 
@@ -69,7 +73,6 @@ struct Sphere
 {
     float4 centre;
     Material mat;
-    int type;
 };
 
 bool SphereHit(in Sphere sph, in Ray ray, inout RayHit hit)
@@ -91,21 +94,20 @@ bool SphereHit(in Sphere sph, in Ray ray, inout RayHit hit)
         if (t < 0) return false;
     }
 
-    if (t >= hit.dist_type[0]) return false;
+    if (t >= hit.dist) return false;
     
     hit.pos = ray.origin + t * ray.dir;
     hit.n = normalize(hit.pos - sph.centre.xyz);
     hit.mat = sph.mat;
-    hit.dist_type[0] = t;
-    hit.dist_type[1] = sph.type;
+    hit.dist = t;
     return true;
 }
+
 
 struct Box
 {
     float4x4 pn;
     Material mat;
-    int type;
 };
 
 bool BoxHit(in float3 p, in Box bx, in RayHit hit)
@@ -134,15 +136,14 @@ bool BoxHit(in Box bx, in Ray ray, inout RayHit hit)
         a[1] = bx.pn[0].xyz + a[0] * bx.pn[idx].w;
         t = dot(a[1] - ray.origin, a[0]) / dot(ray.dir, a[0]);
         a[2] = ray.origin + t * ray.dir;
-        if ( t > 0 && t < hit.dist_type[0] && BoxHit(a[2] - bx.pn[0].xyz, bx, hit) && BoxHit(a[2], !sign, idx, bx) && 
+        if ( t > 0 && t < hit.dist && BoxHit(a[2] - bx.pn[0].xyz, bx, hit) && BoxHit(a[2], !sign, idx, bx) && 
             BoxHit(a[2], !sign, idx % 3 + 1, bx) && BoxHit(a[2], sign, idx % 3 + 1, bx) &&
             BoxHit(a[2], !sign, (idx + 1) % 3 + 1, bx) && BoxHit(a[2], sign, (idx + 1) % 3 + 1, bx) )
         {
             hit.pos = a[2];
             hit.n = a[0];
             hit.mat = bx.mat;
-            hit.dist_type[0] = t;
-            hit.dist_type[1] = bx.type;
+            hit.dist = t;
             output = true;
         }
         sign = !sign;
@@ -156,19 +157,56 @@ struct Disc
     float3 pos;
     float4 n;
     Material mat;
-    int type;
 };
 
 bool DiscHit(in Disc ds, in Ray ray, inout RayHit hit)
 {
     float t = dot(ds.pos - ray.origin, ds.n.xyz) / dot(ray.dir, ds.n.xyz);
     float3 p = ray.origin + t * ray.dir - ds.pos;
-    if (t < 0 || t > hit.dist_type[0] || dot(p, p) > ds.n.w * ds.n.w) return false;
+    if (t < 0 || t > hit.dist || dot(p, p) > ds.n.w * ds.n.w) return false;
     hit.pos = p;
     hit.n = ds.n.xyz;
     hit.mat = ds.mat;
-    hit.dist_type[0] = t;
-    hit.dist_type[1] = ds.type;
+    hit.dist = t;
+    return true;
+}
+
+struct Quad
+{
+    float4 pos;
+    float4 n;
+    Material mat;
+};
+
+void CreateCoordinateSystem(in float3 n, out float3 x, out float3 z) 
+{
+    if (abs(n.x) > abs(n.y)) 
+        x = normalize(float3(n.z, 0, -n.x)); 
+    else 
+        x = normalize(float3(0, -n.z, n.y));
+    z = cross(x, n);
+}
+
+bool QuadHit(in Quad qd, in Ray ray, inout RayHit hit)
+{
+    float t = dot(qd.pos.xyz - ray.origin, qd.n.xyz) / dot(ray.dir, qd.n.xyz);
+    float3 p = ray.origin + t * ray.dir - qd.pos.xyz;
+    float3 x, z; 
+    CreateCoordinateSystem(qd.n.xyz, x, z);
+    //x = x*cosi + z*sini;
+    //z = x*cosi - z*sini; 
+    float3 a =  qd.pos.xyz + x * qd.pos.w + z * qd.n.w;
+    float3 ab = qd.pos.xyz + x * qd.pos.w - z * qd.n.w - a;
+    float3 ad = qd.pos.xyz - x * qd.pos.w + z * qd.n.w - a;
+    a = p - a;
+    float2 dots = float2(dot(a,ab), dot(a,ad));
+    if (t < 0 || t > hit.dist || 0 > dots.x || 0 > dots.y  || 
+        dots.x > dot(ab, ab) || dots.y > dot(ad, ad)) return false;
+    
+    hit.pos = p;
+    hit.n = qd.n.xyz;
+    hit.mat = qd.mat;
+    hit.dist = t;
     return true;
 }
 
@@ -216,63 +254,8 @@ RayHit CreateRayHit()
     hit.pos = Black();
     hit.n = Black();
     hit.mat = CreateMaterial(Black(), Black());
-    hit.dist_type[0] = MAX_DIST;
-    hit.dist_type[1] = DIFF;
+    hit.dist = MAX_DIST;
     return hit;
-}
-
-int SEED;
-static float helper = 1; 
-float rnd()
-{
-	SEED = int(fmod(float(SEED)*1364.0+626.0 * helper, 509.0));
-	return float(SEED)/509.0;
-}
-
-float3 UniformHemisphere(in float3 normal) 
-{
-    
-    float3 x;
-    if (abs(normal.x) > abs(normal.y)) 
-        x = normalize(float3(normal.z, 0, -normal.x)); 
-    else 
-        x = normalize(float3(0, -normal.z, normal.y));
-     
-    float3 z = cross(x, normal);
-    float2 r = float2(rnd(), rnd());
-    float2 a = float2(sqrt(1 - r.x * r.x), 2 * PI * r.y);
-    
-    float3 output = float3(a.x * cos(a.y), r.x, a.x * sin(a.y));
-    output = float3(
-        output.x * z.x + output.y * normal.x + output.z * x.x, 
-        output.x * z.y + output.y * normal.y + output.z * x.y, 
-        output.x * z.z + output.y * normal.z + output.z * x.z
-    );
-    
-    return normalize(output);  
-}
-
-float3 CosineHemisphere(in float3 normal) 
-{
-    
-    float3 x;
-    if (abs(normal.x) > abs(normal.y)) 
-        x = normalize(float3(normal.z, 0, -normal.x)); 
-    else 
-        x = normalize(float3(0, -normal.z, normal.y));
-     
-    float3 z = cross(x, normal);
-    float2 r = float2(rnd(), rnd());
-    float2 a = float2(sqrt(r.x), 2 * PI * r.y);
-    
-    float3 output = float3(a.x * cos(a.y), sqrt(1 - r.x), a.x * sin(a.y));
-    output = float3(
-        output.x * z.x + output.y * normal.x + output.z * x.x, 
-        output.x * z.y + output.y * normal.y + output.z * x.y, 
-        output.x * z.z + output.y * normal.z + output.z * x.z
-    );
-    
-    return normalize(output);  
 }
 
 #endif

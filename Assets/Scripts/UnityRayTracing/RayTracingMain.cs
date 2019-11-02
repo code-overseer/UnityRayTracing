@@ -12,8 +12,7 @@ namespace UnityRayTracing
         // Start is called before the first frame update
         public ComputeShader rtxShader;
         public Texture skybox;
-
-
+        
         private RenderTexture _target;
         private Camera _camera;
         private int _currentSample = 0;
@@ -24,10 +23,46 @@ namespace UnityRayTracing
         private ComputeBuffer _boxBuffer;
         private ComputeBuffer _quadBuffer;
         private ComputeBuffer _discBuffer;
+        private ComputeBuffer _sizeBuffer;
         private void Awake()
         {
             _camera = GetComponent<Camera>();
             _addMaterial = new UnityEngine.Material(Shader.Find("Hidden/AASampler"));
+        }
+
+        private void OnEnable()
+        {
+            _currentSample = 0;
+            _planeBuffer = new ComputeBuffer(SceneObject.Planes.Count, Strides.plane);
+            _planeBuffer.SetData(SceneObject.Planes);
+            _boxBuffer = new ComputeBuffer(SceneObject.Boxes.Count, Strides.box);
+            _boxBuffer.SetData(SceneObject.Boxes);
+            _sphereBuffer = new ComputeBuffer(SceneObject.Spheres.Count, Strides.sphere);
+            _sphereBuffer.SetData(SceneObject.Spheres);
+            _discBuffer = new ComputeBuffer(SceneObject.Discs.Count, Strides.disc);
+            _discBuffer.SetData(SceneObject.Discs);
+            _quadBuffer = new ComputeBuffer(SceneObject.Quads.Count, Strides.quad);
+            _quadBuffer .SetData(SceneObject.Quads);
+            var sizes = new []
+            {
+                SceneObject.Planes.Count,
+                SceneObject.Boxes.Count,
+                SceneObject.Spheres.Count,
+                SceneObject.Discs.Count,
+                SceneObject.Quads.Count,
+            };
+            _sizeBuffer = new ComputeBuffer(5, 4);
+            _sizeBuffer.SetData(sizes);
+            
+        }
+        
+        private void OnDisable()
+        {
+            _planeBuffer?.Release();
+            _boxBuffer?.Release();
+            _sphereBuffer?.Release();
+            _discBuffer?.Release();
+            _quadBuffer?.Release();
         }
 
         private void Update()
@@ -41,6 +76,9 @@ namespace UnityRayTracing
         {
             rtxShader.SetMatrix("_CameraToWorld", _camera.cameraToWorldMatrix);
             rtxShader.SetMatrix("_CameraInverseProjection", _camera.projectionMatrix.inverse);
+            rtxShader.SetVector("_PixelOffset", new Vector2(UnityEngine.Random.Range(0.0f,0.5f), 
+                UnityEngine.Random.Range(0.0f,0.5f)));
+            rtxShader.SetInt("_Seed", Mathf.FloorToInt(UnityEngine.Random.value * 500));
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
@@ -56,10 +94,6 @@ namespace UnityRayTracing
 
             // Set the target and dispatch the compute shader
             rtxShader.SetTexture(0, "Result", _target);
-            rtxShader.SetVector("_pixelOffset", new Vector2(UnityEngine.Random.Range(0.0f,0.5f), 
-                UnityEngine.Random.Range(0.0f,0.5f)));
-            rtxShader.SetTexture(0, "_skybox", skybox);
-            rtxShader.SetInt("SEED", Mathf.FloorToInt(UnityEngine.Random.value * 100));
 
             var threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
             var threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
