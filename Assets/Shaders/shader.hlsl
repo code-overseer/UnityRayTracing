@@ -6,14 +6,8 @@ static const int REFL = 1;
 static const int TRANS = 2;
 static const float PI = 3.14159265359f;
 static const float EPSILON = 1e-5f;
-static const float MAX_DIST = 1e+5f;
+static const float MAX_DIST = 100000.0f;
 static const float KS = 0.00f;
-
-#define PLANE 0
-#define BOX 1
-#define SPHERE 2
-#define DISC 3
-#define QUAD 4
 
 
 struct Material

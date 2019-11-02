@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace UnityRayTracing
 {
-    using static Extension;
     public enum ObjectType
     {
         Sphere,
@@ -18,12 +17,12 @@ namespace UnityRayTracing
         public ObjectType type;
         public Color emissive;
         public Color reflective;
-        public static List<Sphere> Spheres;
-        public static List<Quad> Quads;
-        public static List<Box> Boxes;
-        public static List<Plane> Planes;
-        public static List<Disc> Discs;
-
+        public static List<Sphere> Spheres = new List<Sphere>();
+        public static List<Quad> Quads = new List<Quad>();
+        public static List<Box> Boxes = new List<Box>();
+        public static List<Plane> Planes = new List<Plane>();
+        public static List<Disc> Discs = new List<Disc>();
+        
         private void Awake()
         {
             MakeSphere();
@@ -69,7 +68,7 @@ namespace UnityRayTracing
             var t = transform;
             var scale = t.localScale * 0.5f;
             var q = new Quad(BuildVec4(t.position, scale.x),
-                BuildVec4(t.forward, scale.y), 
+                BuildVec4(-t.forward, scale.y), 
                 new Material(emissive, reflective));
             Quads.Add(q);
         }
@@ -79,14 +78,16 @@ namespace UnityRayTracing
             if (type != ObjectType.Disc) return;
             var t = transform;
             var scale = t.localScale * 0.5f;
-            var d = new Disc(t.position, BuildVec4(t.up, scale.x), new Material(emissive, reflective));
+            var d = new Disc(t.position, BuildVec4(-t.up, scale.x), new Material(emissive, reflective));
             Discs.Add(d);
         }
 
         private static Vector4 BuildVec4(in Vector3 v, float w)
         {
             var output = Vector4.zero;
-            output.Assign(v);
+            output.x = v.x;
+            output.y = v.y;
+            output.z = v.z;
             output.w = w;
             return output;
         }

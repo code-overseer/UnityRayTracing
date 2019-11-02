@@ -10,7 +10,7 @@ StructuredBuffer<Box> _Boxes;
 StructuredBuffer<Sphere> _Spheres;
 StructuredBuffer<Disc> _Discs;
 StructuredBuffer<Quad> _Quads;
-StructuredBuffer<int> sizes;
+StructuredBuffer<int> _Sizes;
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection; 
 int _Seed;
@@ -18,7 +18,7 @@ float2 _PixelOffset;
 
 static const int MAX_DEPTH = 5;
 static const int SAMPLES = 2;
-static State states[MAX_DEPTH - 1];
+static State states[MAX_DEPTH];
 
 
 static float helper = 1; 
@@ -62,37 +62,47 @@ float3 CosineHemisphere(in float3 normal)
     return normalize(output);  
 }
 
+#define PLANE 0
+#define BOX 1
+#define SPHERE 2
+#define DISC 3
+#define QUAD 4
+
 bool FindHit(inout State state)
 {   
     state.hit.dist = 100000.0f;
-    int n = sizes[PLANE];
+    bool isHit = false;
+
+    int n = _Sizes[PLANE];
     for (int k = 0; k < n; ++k) 
     {
-        PlaneHit(_Planes[k], state.ray, state.hit);
+        isHit = isHit || PlaneHit(_Planes[k], state.ray, state.hit);
     }
-    n = sizes[BOX];
+    
+    n = _Sizes[BOX];
     for (int l = 0; l < n; ++l) 
     {
-        BoxHit(_Boxes[l], state.ray, state.hit);
+        isHit = isHit || BoxHit(_Boxes[l], state.ray, state.hit);
     }
-    n = sizes[SPHERE];
+    
+    n = _Sizes[SPHERE];
     for (int i = 0; i < n; ++i) 
     {
-        SphereHit(_Spheres[i], state.ray, state.hit);
+        isHit = isHit || SphereHit(_Spheres[i], state.ray, state.hit);
     }
-    n = sizes[DISC];
+    n = _Sizes[DISC];
     for (int j = 0; j < n; ++j) 
     {
-        DiscHit(_Discs[j], state.ray, state.hit);
+        isHit = isHit || DiscHit(_Discs[j], state.ray, state.hit);
     }
-    n = sizes[QUAD];
+    n = _Sizes[QUAD];
     for (int m = 0; m < n; ++m) 
     {
-        QuadHit(_Quads[m], state.ray, state.hit);
+        isHit = isHit || QuadHit(_Quads[m], state.ray, state.hit);
     }
     
     state.kr_d_out.z = dot(state.ray.dir, state.hit.n) < 0;
-	return state.hit.dist < 100000.0f;
+	return isHit;
 }
 
 void Push(inout int ptr, in State current) 
@@ -103,7 +113,6 @@ void Push(inout int ptr, in State current)
 
 void Pop(inout int ptr, out State current) 
 {
-    if (!ptr) return;
     current = states[--ptr];
 }
 
@@ -141,7 +150,6 @@ State Init(in float2 uv)
     state.kr_d_out[0] = 1;
     state.kr_d_out[1] = 0;
     state.kr_d_out[2] = 1;
-    
     return state;
 }
 
@@ -159,7 +167,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     helper = length(noise);
     
     float3 pixel = Black();
-    State current = Init(uv);
+    
     uint count = 2u << (MAX_DEPTH - 1);
     for (int i = 0; i < SAMPLES; ++i) {
         int ptr = 0;
@@ -171,7 +179,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         }
         pixel += color;
     }
-    
     
     Result[id.xy] = float4(pixel / SAMPLES, 1);
     

@@ -33,16 +33,34 @@ namespace UnityRayTracing
         private void OnEnable()
         {
             _currentSample = 0;
-            _planeBuffer = new ComputeBuffer(SceneObject.Planes.Count, Strides.plane);
-            _planeBuffer.SetData(SceneObject.Planes);
-            _boxBuffer = new ComputeBuffer(SceneObject.Boxes.Count, Strides.box);
-            _boxBuffer.SetData(SceneObject.Boxes);
-            _sphereBuffer = new ComputeBuffer(SceneObject.Spheres.Count, Strides.sphere);
-            _sphereBuffer.SetData(SceneObject.Spheres);
-            _discBuffer = new ComputeBuffer(SceneObject.Discs.Count, Strides.disc);
-            _discBuffer.SetData(SceneObject.Discs);
-            _quadBuffer = new ComputeBuffer(SceneObject.Quads.Count, Strides.quad);
-            _quadBuffer .SetData(SceneObject.Quads);
+            if (SceneObject.Planes.Count > 0)
+            {
+                _planeBuffer = new ComputeBuffer(SceneObject.Planes.Count, Strides.plane);
+                _planeBuffer.SetData(SceneObject.Planes);
+            }
+            if (SceneObject.Boxes.Count > 0)
+            {
+                _boxBuffer = new ComputeBuffer(SceneObject.Boxes.Count, Strides.box);
+                _boxBuffer.SetData(SceneObject.Boxes);
+            }
+            if (SceneObject.Spheres.Count > 0)
+            {
+                _sphereBuffer = new ComputeBuffer(SceneObject.Spheres.Count, Strides.sphere);
+                _sphereBuffer.SetData(SceneObject.Spheres);
+            }
+
+            if (SceneObject.Discs.Count > 0)
+            {
+                _discBuffer = new ComputeBuffer(SceneObject.Discs.Count, Strides.disc);
+                _discBuffer.SetData(SceneObject.Discs);
+            }
+
+            if (SceneObject.Quads.Count > 0)
+            {
+                _quadBuffer = new ComputeBuffer(SceneObject.Quads.Count, Strides.quad);
+                _quadBuffer .SetData(SceneObject.Quads);
+            }
+            
             var sizes = new []
             {
                 SceneObject.Planes.Count,
@@ -63,6 +81,17 @@ namespace UnityRayTracing
             _sphereBuffer?.Release();
             _discBuffer?.Release();
             _quadBuffer?.Release();
+            _sizeBuffer?.Release();
+        }
+
+        private void OnApplicationQuit()
+        {
+            _planeBuffer?.Release();
+            _boxBuffer?.Release();
+            _sphereBuffer?.Release();
+            _discBuffer?.Release();
+            _quadBuffer?.Release();
+            _sizeBuffer?.Release();
         }
 
         private void Update()
@@ -74,11 +103,19 @@ namespace UnityRayTracing
         
         private void SetShaderParameters()
         {
+            var kernel = rtxShader.FindKernel("CSMain");
             rtxShader.SetMatrix("_CameraToWorld", _camera.cameraToWorldMatrix);
             rtxShader.SetMatrix("_CameraInverseProjection", _camera.projectionMatrix.inverse);
-            rtxShader.SetVector("_PixelOffset", new Vector2(UnityEngine.Random.Range(0.0f,0.5f), 
-                UnityEngine.Random.Range(0.0f,0.5f)));
+            rtxShader.SetVector("_PixelOffset", new Vector2(UnityEngine.Random.value - 0.5f, 
+                UnityEngine.Random.value - 0.5f));
             rtxShader.SetInt("_Seed", Mathf.FloorToInt(UnityEngine.Random.value * 500));
+            if (_planeBuffer != null) rtxShader.SetBuffer(kernel, "_Planes", _planeBuffer);
+            if (_boxBuffer != null) rtxShader.SetBuffer(kernel, "_Boxes", _boxBuffer);
+            if (_sphereBuffer != null) rtxShader.SetBuffer(kernel, "_Spheres", _sphereBuffer);
+            if (_discBuffer != null) rtxShader.SetBuffer(kernel, "_Discs", _discBuffer);
+            if (_quadBuffer != null) rtxShader.SetBuffer(kernel, "_Quads", _quadBuffer);
+            rtxShader.SetBuffer(kernel, "_Sizes", _sizeBuffer);
+            
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)

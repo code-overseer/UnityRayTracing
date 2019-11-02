@@ -21,13 +21,13 @@ namespace UnityRayTracing
         public Vector3 reflective;
         public Material(Vector3 eta, Vector3 rho)
         {
-            emissive = eta;
+            emissive = eta * 1;
             reflective = rho;
         }
         
         public Material(Color eta, Color rho)
         {
-            emissive = new Vector3(eta.r, eta.g, eta.b);
+            emissive = new Vector3(eta.r, eta.g, eta.b) * 1;
             reflective = new Vector3(rho.r, rho.g, rho.b);
         }
     };
