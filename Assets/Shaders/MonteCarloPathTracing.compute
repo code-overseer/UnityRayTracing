@@ -16,15 +16,14 @@ float4x4 _CameraInverseProjection;
 int _Seed;
 float2 _PixelOffset;
 
-static const int MAX_DEPTH = 8;
-static const int SAMPLES = 1;
+static const int MAX_DEPTH = 5;
+static const int SAMPLES = 2;
+
 static State states[MAX_DEPTH];
-
-
-static float helper = 1; 
+static float factor = 1; 
 float rnd()
 {
-	_Seed = int(fmod(float(_Seed)*1364.0+626.0 * helper, 509.0));
+	_Seed = int(fmod(float(_Seed)*1364.0+626.0 * factor, 509.0));
 	return float(_Seed)/509.0;
 }
 
@@ -74,29 +73,29 @@ bool FindHit(inout State state)
     bool isHit = false;
 
     int n = _Sizes[PLANE];
-    for (int k = 0; k < n; ++k) 
+    for (int k = 1; k < n; ++k) 
     {
         isHit = isHit || PlaneHit(_Planes[k], state.ray, state.hit);
     }
     
     n = _Sizes[BOX];
-    for (int l = 0; l < n; ++l) 
+    for (int l = 1; l < n; ++l) 
     {
         isHit = isHit || BoxHit(_Boxes[l], state.ray, state.hit);
     }
     
     n = _Sizes[SPHERE];
-    for (int i = 0; i < n; ++i) 
+    for (int i = 1; i < n; ++i) 
     {
         isHit = isHit || SphereHit(_Spheres[i], state.ray, state.hit);
     }
     n = _Sizes[DISC];
-    for (int j = 0; j < n; ++j) 
+    for (int j = 1; j < n; ++j) 
     {
         isHit = isHit || DiscHit(_Discs[j], state.ray, state.hit);
     }
     n = _Sizes[QUAD];
-    for (int m = 0; m < n; ++m) 
+    for (int m = 1; m < n; ++m) 
     {
         isHit = isHit || QuadHit(_Quads[m], state.ray, state.hit);
     }
@@ -116,36 +115,6 @@ void Pop(inout int ptr, out State current)
     current = states[--ptr];
 }
 
-float GeoAtt(in State current, in float cosi, in float coso) {
-    float3 h =  normalize(current.hit.p_n_o[2] + current.ray.dir);
-    float2 val;
-    val.x = 2 * dot(current.hit.p_n_o[1], h) * cosi / dot(current.hit.p_n_o[2], h);
-    val.y = 2 * dot(current.hit.p_n_o[1], h) * coso / dot(current.hit.p_n_o[2], h);
-    
-    return min(1, min(val.x, val.y));
-}
-
-float Beckmann(in State current) {
-    float m = 0.18f;
-    if (m < EPSILON) return 0; 
-    float3 h =  normalize(current.hit.p_n_o[2] + current.ray.dir);
-    float cosa = dot(current.hit.p_n_o[1], h);
-    return exp( (cosa*cosa - 1)/(cosa*cosa*m*m))/(PI*m*m*pow(cosa,4));
-}
-
-float Fresnel(in State state, in float cosi) 
-{
-	float etai = 1.0f;
-	float etat = 1.667f;
-	float r0 = pow((etai - etat)/(etai + etat), 2);
-	return r0 + (1 - r0) * pow((1 - abs(cosi)), 5);
-}
-
-float CookTorrance(in State state, in float cosi, in float coso)
-{
-    return Fresnel(state, cosi) * Beckmann(state) * GeoAtt(state, cosi, coso) / (4 * cosi * coso);
-}
-
 void Trace(inout int ptr, inout float3 color, inout State current) 
 {
     bool hit = FindHit(current);
@@ -159,9 +128,11 @@ void Trace(inout int ptr, inout float3 color, inout State current)
         else if (ptr > 0) 
         {   
             Pop(ptr, current);
-            float coso = dot(current.hit.p_n_o[2], current.hit.p_n_o[1]);
-            float cosi = dot(current.ray.dir, current.hit.p_n_o[1]);
-            color = current.hit.mat.eps + (current.hit.mat.rho + CookTorrance(current, cosi, coso) * PI) * color;
+            float2 cosi_o = float2(dot(current.ray.dir, current.hit.p_n_o[1]), 
+                                    dot(current.hit.p_n_o[2], current.hit.p_n_o[1]));
+            float3 spec = CookTorrance(current, cosi_o[0], cosi_o[1]);
+            float3 kd = (1 - spec) * (1 - current.hit.mat.rough_ior_metal[2]);
+            color = current.hit.mat.eps + (kd * current.hit.mat.rho + spec * PI) * color;
             current.kr_d_out[1] = MAX_DEPTH;
         }
         return;
@@ -173,37 +144,21 @@ void Trace(inout int ptr, inout float3 color, inout State current)
     ++current.kr_d_out[1];
 }
 
-
-State Init(in float2 uv) 
-{
-    State state;
-    state.ray = CreateCameraRay(_CameraToWorld, _CameraInverseProjection, uv);
-    state.hit = CreateRayHit();
-    state.kr_d_out[0] = 1;
-    state.kr_d_out[1] = 0;
-    state.kr_d_out[2] = 1;
-    return state;
-}
-
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     uint width, height;
     Result.GetDimensions(width, height);
-    _Seed = _Seed | id.x;
-    _Seed = _Seed | id.y;
-    _Seed = _Seed & 0x7FFFFFFF;
-    float2 uv = float2((id.xy + _PixelOffset) / float2(width, height) * 2.0f - 1.0f);
-    helper = length(uv);
-    float2 noise = frac(sin(dot(uv + float2(rnd(),rnd())*length(uv),float2(30*rnd(),160*rnd()))) * 43758.5453);
-    helper = length(noise);
+    float2 uv = (float2(id.xy) + _PixelOffset) / float2(width, height) * 2.0f - 1.0f;
+    factor = length(uv);
+    factor = frac(sin(dot(uv + float2(7,11),float2(31,167)*factor)) * _Seed);
     
     float3 pixel = Black();
     
     uint count = 2u << (MAX_DEPTH - 1);
     for (int i = 0; i < SAMPLES; ++i) {
         int ptr = 0;
-        State current = Init(uv);
+        State current = NewState(uv, _CameraToWorld, _CameraInverseProjection);
         float3 color = Black();
         for (uint j = 0; j < count; ++j) 
         {

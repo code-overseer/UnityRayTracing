@@ -4,6 +4,7 @@
 static const int DIFF = 0;
 static const int REFL = 1;
 static const int TRANS = 2;
+static const float IoR= 1.0f;
 static const float PI = 3.14159265359f;
 static const float EPSILON = 1e-5f;
 static const float MAX_DIST = 100000.0f;
@@ -14,6 +15,7 @@ struct Material
 {
     float3 eps;
     float3 rho;
+    float3 rough_ior_metal;
 };
 
 Material CreateMaterial(in float3 reflective, in float3 emissive)
@@ -21,6 +23,7 @@ Material CreateMaterial(in float3 reflective, in float3 emissive)
     Material mat;
     mat.eps = emissive;
     mat.rho = reflective;
+    mat.rough_ior_metal = float3(0,0,0);
     return mat;
 }
 
@@ -173,7 +176,7 @@ struct Quad
 
 void CreateCoordinateSystem(in float3 n, out float3 x, out float3 z) 
 {
-    if (abs(n.x) > abs(n.y)) 
+    if (abs(n.x) >= abs(n.y)) 
         x = normalize(float3(n.z, 0, -n.x)); 
     else 
         x = normalize(float3(0, -n.z, n.y));
@@ -251,6 +254,45 @@ RayHit CreateRayHit()
     hit.mat = CreateMaterial(Black(), Black());
     hit.dist = MAX_DIST;
     return hit;
+}
+
+State NewState(in float2 uv, in float4x4 ctw, in float4x4 cip) 
+{
+    State state;
+    state.ray = CreateCameraRay(ctw, cip, uv);
+    state.hit = CreateRayHit();
+    state.kr_d_out[0] = 1;
+    state.kr_d_out[1] = 0;
+    state.kr_d_out[2] = 1;
+    return state;
+}
+
+float GeoAtt(in State state, in float3 h, in float cosi, in float coso) {
+    float2 val;
+    val.x = 2 * dot(state.hit.p_n_o[1], h) * cosi / dot(state.hit.p_n_o[2], h);
+    val.y = 2 * dot(state.hit.p_n_o[1], h) * coso / dot(state.hit.p_n_o[2], h);
+    
+    return min(1, min(val.x, val.y));
+}
+
+float Beckmann(in State state, in float3 h) {
+    float m = state.hit.mat.rough_ior_metal[0];
+    if (m < EPSILON) return 0; 
+    float cosa = dot(state.hit.p_n_o[1], h);
+    return exp( (cosa*cosa - 1)/(cosa*cosa*m*m))/(PI*m*m*pow(cosa,4));
+}
+
+float3 Fresnel(in State state, in float cosi) 
+{
+	float3 r0 = pow((IoR - state.hit.mat.rough_ior_metal[1])/(IoR + state.hit.mat.rough_ior_metal[1]), 2) * float3(1,1,1);
+	r0 = lerp(r0, state.hit.mat.rho, state.hit.mat.rough_ior_metal[2]);
+	return r0 + (1 - r0) * pow((1 - abs(cosi)), 5);
+}
+
+float3 CookTorrance(in State state, in float cosi, in float coso)
+{
+    float3 h =  normalize(state.hit.p_n_o[2] + state.ray.dir);
+    return Fresnel(state, cosi) * Beckmann(state, h) * GeoAtt(state, h, cosi, coso) / (4 * cosi * coso);
 }
 
 #endif

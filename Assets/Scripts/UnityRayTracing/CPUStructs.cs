@@ -7,7 +7,7 @@ namespace UnityRayTracing
 {
     public static class Strides
     {
-        public const int material = 24;
+        public const int material = 36;
         public const int plane = 24 + material;
         public const int sphere = 16 + material;
         public const int box = 16 * 4 + material;
@@ -19,16 +19,13 @@ namespace UnityRayTracing
     {
         public Vector3 emissive;
         public Vector3 reflective;
-        public Material(Vector3 eta, Vector3 rho)
-        {
-            emissive = eta * 1;
-            reflective = rho;
-        }
-        
-        public Material(Color eta, Color rho)
+        public Vector3 rough_ior_metal;
+
+        public Material(Color eta, Color rho, float r, float i, float m)
         {
             emissive = new Vector3(eta.r, eta.g, eta.b) * 1;
             reflective = new Vector3(rho.r, rho.g, rho.b);
+            rough_ior_metal = new Vector3(r, i, m); 
         }
     };
     

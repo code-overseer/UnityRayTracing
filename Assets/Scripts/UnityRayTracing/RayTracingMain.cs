@@ -34,33 +34,16 @@ namespace UnityRayTracing
         private void OnEnable()
         {
             _currentSample = 0;
-            if (SceneObject.Planes.Count > 0)
-            {
-                _planeBuffer = new ComputeBuffer(SceneObject.Planes.Count, Strides.plane);
-                _planeBuffer.SetData(SceneObject.Planes);
-            }
-            if (SceneObject.Boxes.Count > 0)
-            {
-                _boxBuffer = new ComputeBuffer(SceneObject.Boxes.Count, Strides.box);
-                _boxBuffer.SetData(SceneObject.Boxes);
-            }
-            if (SceneObject.Spheres.Count > 0)
-            {
-                _sphereBuffer = new ComputeBuffer(SceneObject.Spheres.Count, Strides.sphere);
-                _sphereBuffer.SetData(SceneObject.Spheres);
-            }
-
-            if (SceneObject.Discs.Count > 0)
-            {
-                _discBuffer = new ComputeBuffer(SceneObject.Discs.Count, Strides.disc);
-                _discBuffer.SetData(SceneObject.Discs);
-            }
-
-            if (SceneObject.Quads.Count > 0)
-            {
-                _quadBuffer = new ComputeBuffer(SceneObject.Quads.Count, Strides.quad);
-                _quadBuffer .SetData(SceneObject.Quads);
-            }
+            _planeBuffer = new ComputeBuffer(SceneObject.Planes.Count, Strides.plane);
+            _planeBuffer.SetData(SceneObject.Planes);
+            _boxBuffer = new ComputeBuffer(SceneObject.Boxes.Count, Strides.box);
+            _boxBuffer.SetData(SceneObject.Boxes);
+            _sphereBuffer = new ComputeBuffer(SceneObject.Spheres.Count, Strides.sphere);
+            _sphereBuffer.SetData(SceneObject.Spheres);
+            _discBuffer = new ComputeBuffer(SceneObject.Discs.Count, Strides.disc);
+            _discBuffer.SetData(SceneObject.Discs);
+            _quadBuffer = new ComputeBuffer(SceneObject.Quads.Count, Strides.quad);
+            _quadBuffer .SetData(SceneObject.Quads);
             
             var sizes = new []
             {
@@ -124,7 +107,7 @@ namespace UnityRayTracing
             SetShaderParameters();
             Render(destination);
         }
-        
+
         private void Render(RenderTexture destination)
         {
             // Make sure we have a current render target
@@ -143,6 +126,17 @@ namespace UnityRayTracing
             _currentSample++;
         }
 
+        private void Trace()
+        {
+            rtxShader.SetTexture(0, "Result", _target);
+
+            var threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
+            var threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
+            rtxShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
+            
+            _currentSample++;
+        }
+
         private void InitRenderTexture()
         {
             if (_target != null && _target.width == Screen.width && _target.height == Screen.height) return;
@@ -157,7 +151,7 @@ namespace UnityRayTracing
                 RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear) {enableRandomWrite = true};
             _target.Create();
         }
-        
+
     }    
 }
 
