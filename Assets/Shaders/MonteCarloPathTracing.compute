@@ -16,8 +16,8 @@ float4x4 _CameraInverseProjection;
 int _Seed;
 float2 _PixelOffset;
 
-static const int MAX_DEPTH = 5;
-static const int SAMPLES = 2;
+static const int MAX_DEPTH = 8;
+static const int SAMPLES = 1;
 static State states[MAX_DEPTH];
 
 
@@ -101,7 +101,7 @@ bool FindHit(inout State state)
         isHit = isHit || QuadHit(_Quads[m], state.ray, state.hit);
     }
     
-    state.kr_d_out.z = dot(state.ray.dir, state.hit.n) < 0;
+    state.kr_d_out.z = dot(state.ray.dir, state.hit.p_n_o[1]) < 0;
 	return isHit;
 }
 
@@ -114,6 +114,36 @@ void Push(inout int ptr, in State current)
 void Pop(inout int ptr, out State current) 
 {
     current = states[--ptr];
+}
+
+float GeoAtt(in State current, in float cosi, in float coso) {
+    float3 h =  normalize(current.hit.p_n_o[2] + current.ray.dir);
+    float2 val;
+    val.x = 2 * dot(current.hit.p_n_o[1], h) * cosi / dot(current.hit.p_n_o[2], h);
+    val.y = 2 * dot(current.hit.p_n_o[1], h) * coso / dot(current.hit.p_n_o[2], h);
+    
+    return min(1, min(val.x, val.y));
+}
+
+float Beckmann(in State current) {
+    float m = 0.18f;
+    if (m < EPSILON) return 0; 
+    float3 h =  normalize(current.hit.p_n_o[2] + current.ray.dir);
+    float cosa = dot(current.hit.p_n_o[1], h);
+    return exp( (cosa*cosa - 1)/(cosa*cosa*m*m))/(PI*m*m*pow(cosa,4));
+}
+
+float Fresnel(in State state, in float cosi) 
+{
+	float etai = 1.0f;
+	float etat = 1.667f;
+	float r0 = pow((etai - etat)/(etai + etat), 2);
+	return r0 + (1 - r0) * pow((1 - abs(cosi)), 5);
+}
+
+float CookTorrance(in State state, in float cosi, in float coso)
+{
+    return Fresnel(state, cosi) * Beckmann(state) * GeoAtt(state, cosi, coso) / (4 * cosi * coso);
 }
 
 void Trace(inout int ptr, inout float3 color, inout State current) 
@@ -129,14 +159,16 @@ void Trace(inout int ptr, inout float3 color, inout State current)
         else if (ptr > 0) 
         {   
             Pop(ptr, current);
-            float cosi = dot(current.ray.dir, current.hit.n);
-            color = current.hit.mat.eps + 2 * cosi * current.hit.mat.rho * color;
+            float coso = dot(current.hit.p_n_o[2], current.hit.p_n_o[1]);
+            float cosi = dot(current.ray.dir, current.hit.p_n_o[1]);
+            color = current.hit.mat.eps + (current.hit.mat.rho + CookTorrance(current, cosi, coso) * PI) * color;
             current.kr_d_out[1] = MAX_DEPTH;
         }
         return;
     }
-    current.ray.origin = current.hit.pos + current.hit.n * EPSILON;
-    current.ray.dir = CosineHemisphere(current.hit.n);
+    current.ray.origin = current.hit.p_n_o[0] + current.hit.p_n_o[1] * EPSILON;
+    current.hit.p_n_o[2] = -current.ray.dir;
+    current.ray.dir = CosineHemisphere(current.hit.p_n_o[1]);
     Push(ptr, current);
     ++current.kr_d_out[1];
 }

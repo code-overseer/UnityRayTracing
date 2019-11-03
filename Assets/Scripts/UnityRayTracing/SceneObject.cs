@@ -68,7 +68,7 @@ namespace UnityRayTracing
             var t = transform;
             var scale = t.localScale * 0.5f;
             var q = new Quad(BuildVec4(t.position, scale.x),
-                BuildVec4(-t.forward, scale.y), 
+                BuildVec4(t.forward, scale.y), 
                 new Material(emissive, reflective));
             Quads.Add(q);
         }
@@ -78,7 +78,7 @@ namespace UnityRayTracing
             if (type != ObjectType.Disc) return;
             var t = transform;
             var scale = t.localScale * 0.5f;
-            var d = new Disc(t.position, BuildVec4(-t.up, scale.x), new Material(emissive, reflective));
+            var d = new Disc(t.position, BuildVec4(t.up, scale.x), new Material(emissive, reflective));
             Discs.Add(d);
         }
 

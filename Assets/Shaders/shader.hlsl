@@ -38,8 +38,7 @@ struct Point
 
 struct RayHit
 {
-    float3 pos;
-    float3 n;
+    float3x3 p_n_o;
     Material mat;
     float dist;
 };
@@ -56,8 +55,8 @@ bool PlaneHit(in Plane pl, in Ray ray, inout RayHit hit)
 {
     float t = dot(pl.pos - ray.origin, pl.n) / dot(ray.dir, pl.n);
     if (t < 0 || t > hit.dist) return false;
-    hit.pos = ray.origin + t * ray.dir;
-    hit.n = pl.n;
+    hit.p_n_o[0] = ray.origin + t * ray.dir;
+    hit.p_n_o[1] = pl.n;
     hit.mat = pl.mat;
     hit.dist = t; 
     return true;
@@ -90,8 +89,8 @@ bool SphereHit(in Sphere sph, in Ray ray, inout RayHit hit)
 
     if (t >= hit.dist) return false;
     
-    hit.pos = ray.origin + t * ray.dir;
-    hit.n = normalize(hit.pos - sph.centre.xyz);
+    hit.p_n_o[0] = ray.origin + t * ray.dir;
+    hit.p_n_o[1] = normalize(hit.p_n_o[0] - sph.centre.xyz);
     hit.mat = sph.mat;
     hit.dist = t;
     return true;
@@ -134,8 +133,8 @@ bool BoxHit(in Box bx, in Ray ray, inout RayHit hit)
             BoxHit(a[2], !sign, idx % 3 + 1, bx) && BoxHit(a[2], sign, idx % 3 + 1, bx) &&
             BoxHit(a[2], !sign, (idx + 1) % 3 + 1, bx) && BoxHit(a[2], sign, (idx + 1) % 3 + 1, bx) )
         {
-            hit.pos = a[2];
-            hit.n = a[0];
+            hit.p_n_o[0] = a[2];
+            hit.p_n_o[1] = a[0];
             hit.mat = bx.mat;
             hit.dist = t;
             output = true;
@@ -158,8 +157,8 @@ bool DiscHit(in Disc ds, in Ray ray, inout RayHit hit)
     float t = dot(ds.pos - ray.origin, ds.n.xyz) / dot(ray.dir, ds.n.xyz);
     float3 p = ray.origin + t * ray.dir - ds.pos;
     if (t < 0 || t > hit.dist || dot(p, p) > ds.n.w * ds.n.w) return false;
-    hit.pos = p;
-    hit.n = ds.n.xyz;
+    hit.p_n_o[0] = p;
+    hit.p_n_o[1] = ds.n.xyz;
     hit.mat = ds.mat;
     hit.dist = t;
     return true;
@@ -178,13 +177,13 @@ void CreateCoordinateSystem(in float3 n, out float3 x, out float3 z)
         x = normalize(float3(n.z, 0, -n.x)); 
     else 
         x = normalize(float3(0, -n.z, n.y));
-    z = cross(x, n);
+    z = normalize(cross(x, n));
 }
 
 bool QuadHit(in Quad qd, in Ray ray, inout RayHit hit)
 {
     float t = dot(qd.pos.xyz - ray.origin, qd.n.xyz) / dot(ray.dir, qd.n.xyz);
-    float3 p = ray.origin + t * ray.dir - qd.pos.xyz;
+    float3 p = ray.origin + t * ray.dir;
     float3 x, z; 
     CreateCoordinateSystem(qd.n.xyz, x, z);
     //x = x*cosi + z*sini;
@@ -197,8 +196,8 @@ bool QuadHit(in Quad qd, in Ray ray, inout RayHit hit)
     if (t < 0 || t > hit.dist || 0 > dots.x || 0 > dots.y  || 
         dots.x > dot(ab, ab) || dots.y > dot(ad, ad)) return false;
     
-    hit.pos = p;
-    hit.n = qd.n.xyz;
+    hit.p_n_o[0] = p;
+    hit.p_n_o[1] = qd.n.xyz;
     hit.mat = qd.mat;
     hit.dist = t;
     return true;
@@ -229,24 +228,26 @@ Ray CreateRay(in float3 origin, in float3 dir)
     return ray;
 }
 
+static float3 ViewPoint;
 Ray CreateCameraRay(in float4x4 unity_CameraToWorld, in float4x4 _CameraInverseProjection, in float2 uv)
 {
     // Transform the camera origin to world space
-    float3 origin = mul(unity_CameraToWorld, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
+    ViewPoint = mul(unity_CameraToWorld, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
     // Invert the perspective projection of the view-space position
     float3 dir = mul(_CameraInverseProjection, float4(uv, 0.0f, 1.0f)).xyz;
     // Transform the dir from camera to world space and normalize
     dir = mul(unity_CameraToWorld, float4(dir, 0.0f)).xyz;
     dir = normalize(dir);
 
-    return CreateRay(origin, dir);
+    return CreateRay(ViewPoint, dir);
 }
 
 RayHit CreateRayHit()
 {
     RayHit hit;
-    hit.pos = Black();
-    hit.n = Black();
+    hit.p_n_o[0] = Black();
+    hit.p_n_o[1] = Black();
+    hit.p_n_o[2] = Black();
     hit.mat = CreateMaterial(Black(), Black());
     hit.dist = MAX_DIST;
     return hit;

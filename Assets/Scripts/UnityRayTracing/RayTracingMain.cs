@@ -29,6 +29,7 @@ namespace UnityRayTracing
             _camera = GetComponent<Camera>();
             _addMaterial = new UnityEngine.Material(Shader.Find("Hidden/AASampler"));
         }
+        
 
         private void OnEnable()
         {
