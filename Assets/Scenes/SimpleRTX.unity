@@ -421,8 +421,8 @@ MonoBehaviour:
   type: 3
   emissive: {r: 0, g: 0, b: 0, a: 0}
   reflective: {r: 1, g: 1, b: 1, a: 0}
-  roughness: 0.7
-  indexOfReflection: 2.32
+  roughness: 0
+  indexOfReflection: 1.77
   metallic: 0
 --- !u!23 &843952216
 MeshRenderer:
@@ -517,7 +517,7 @@ MonoBehaviour:
   type: 0
   emissive: {r: 0, g: 0, b: 0, a: 0}
   reflective: {r: 1, g: 0.5399072, b: 0, a: 0}
-  roughness: 0.07
+  roughness: 0
   indexOfReflection: 1.99
   metallic: 1
 --- !u!23 &1023464906
@@ -709,8 +709,8 @@ MonoBehaviour:
   type: 1
   emissive: {r: 1, g: 1, b: 1, a: 0}
   reflective: {r: 0, g: 0, b: 0, a: 0}
-  roughness: 0.1
-  indexOfReflection: 1.26
+  roughness: 0.3
+  indexOfReflection: 1
   metallic: 0
 --- !u!23 &1465257964
 MeshRenderer:
@@ -804,9 +804,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 0
   emissive: {r: 0, g: 0, b: 0, a: 0}
-  reflective: {r: 0.023985418, g: 0.11831251, b: 0.7264151, a: 0}
-  roughness: 0.05
-  indexOfReflection: 1.66
+  reflective: {r: 1, g: 1, b: 1, a: 0}
+  roughness: 0.21
+  indexOfReflection: 1
   metallic: 0
 --- !u!23 &1482448093
 MeshRenderer:
@@ -1615,6 +1615,6 @@ MonoBehaviour:
   type: 4
   emissive: {r: 1, g: 0.89071333, b: 0.5424528, a: 0}
   reflective: {r: 0, g: 0, b: 0, a: 0}
-  roughness: 0.1
+  roughness: 0.3
   indexOfReflection: 1.26
   metallic: 0

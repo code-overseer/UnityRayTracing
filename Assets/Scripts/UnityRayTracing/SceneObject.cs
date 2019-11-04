@@ -18,7 +18,7 @@ namespace UnityRayTracing
         public ObjectType type;
         public Color emissive;
         public Color reflective;
-        [Range(0.0F, 1.0F)]
+        [Range(0.0F, 2.0F)]
         public float roughness;
         [Range(1.0F, 6.0F)]
         public float indexOfReflection = 1;

@@ -6,6 +6,7 @@ static const int REFL = 1;
 static const int TRANS = 2;
 static const float IoR= 1.0f;
 static const float PI = 3.14159265359f;
+static const float INV_PI = 0.3183098862f;
 static const float EPSILON = 1e-5f;
 static const float MAX_DIST = 100000.0f;
 static const float KS = 0.00f;
@@ -210,7 +211,7 @@ struct State
 {
     RayHit hit;
     Ray ray;
-    float3 kr_d_out;
+    float3 kr_d_cosmax;
 };
 
 float3 Black()
@@ -261,25 +262,27 @@ State NewState(in float2 uv, in float4x4 ctw, in float4x4 cip)
     State state;
     state.ray = CreateCameraRay(ctw, cip, uv);
     state.hit = CreateRayHit();
-    state.kr_d_out[0] = 1;
-    state.kr_d_out[1] = 0;
-    state.kr_d_out[2] = 1;
+    state.kr_d_cosmax[0] = 1;
+    state.kr_d_cosmax[1] = 0;
+    state.kr_d_cosmax[2] = 1;
     return state;
 }
 
 float GeoAtt(in State state, in float3 h, in float cosi, in float coso) {
     float2 val;
-    val.x = 2 * dot(state.hit.p_n_o[1], h) * cosi / dot(state.hit.p_n_o[2], h);
-    val.y = 2 * dot(state.hit.p_n_o[1], h) * coso / dot(state.hit.p_n_o[2], h);
+    val.x = 2 * dot(state.hit.p_n_o[1], h) / dot(state.hit.p_n_o[2], h);
+    val.y = val.x * coso;
+    val.x *= cosi;
     
     return min(1, min(val.x, val.y));
 }
 
-float Beckmann(in State state, in float3 h) {
+float Beckmann(in State state, in float3 h, in float cosi, in float coso) {
     float m = state.hit.mat.rough_ior_metal[0];
-    if (m < EPSILON) return 0; 
+    if (m < 0.5f * INV_PI) return (abs(cosi - coso) < EPSILON);
+    m -= (m > 1);
     float cosa = dot(state.hit.p_n_o[1], h);
-    return exp( (cosa*cosa - 1)/(cosa*cosa*m*m))/(PI*m*m*pow(cosa,4));
+    return exp( (cosa*cosa - 1)/(cosa*cosa*m*m))*INV_PI / (m*m*pow(cosa,4));
 }
 
 float3 Fresnel(in State state, in float cosi) 
@@ -292,7 +295,7 @@ float3 Fresnel(in State state, in float cosi)
 float3 CookTorrance(in State state, in float cosi, in float coso)
 {
     float3 h =  normalize(state.hit.p_n_o[2] + state.ray.dir);
-    return Fresnel(state, cosi) * Beckmann(state, h) * GeoAtt(state, h, cosi, coso) / (4 * cosi * coso);
+    return Fresnel(state, cosi) * Beckmann(state, h, cosi, coso) * GeoAtt(state, h, cosi, coso) / (4 * cosi * coso);
 }
 
 #endif

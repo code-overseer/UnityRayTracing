@@ -16,8 +16,8 @@ float4x4 _CameraInverseProjection;
 int _Seed;
 float2 _PixelOffset;
 
-static const int MAX_DEPTH = 5;
-static const int SAMPLES = 2;
+static const int MAX_DEPTH = 6;
+static const int SAMPLES = 1;
 
 static State states[MAX_DEPTH];
 static float factor = 1; 
@@ -61,6 +61,38 @@ float3 CosineHemisphere(in float3 normal)
     return normalize(output);  
 }
 
+float3 ReflectionCone(in State state) {
+    float km = state.hit.mat.rough_ior_metal[0];
+    float3 dir = reflect(-state.hit.p_n_o[2], state.hit.p_n_o[1]);
+    if (km > 1 || km < INV_PI * 0.5f) return dir;
+    float3 x, z; 
+    CreateCoordinateSystem(dir, x, z);
+    float2 o;
+    o.x = sqrt(1 - pow(dot(dir, state.hit.p_n_o[1]),2));
+    o.y = 1 - km;
+    state.kr_d_cosmax[2] = max(o.x, o.y);
+    float2 r = float2(rnd(), rnd());
+    float3 a;
+    a.x = 1 - r.x + r.x * state.kr_d_cosmax[2];
+    a.y = sqrt(1 - a.x * a.x);
+    a.z = r.y * 2 * PI;
+    float3 output = float3(a.y * cos(a.z), a.x, a.y * sin(a.z));
+    output = float3(
+        output.x * z.x + output.y * dir.x + output.z * x.x, 
+        output.x * z.y + output.y * dir.y + output.z * x.y, 
+        output.x * z.z + output.y * dir.z + output.z * x.z
+    );
+    
+    return normalize(output);  
+
+}
+
+float inv_pdf(in State state, in float2 cosi_o) {
+    float km = state.hit.mat.rough_ior_metal[0];
+    bool b = (km > 1);
+    return b * (PI / cosi_o[0]) + !b * max(1, 2 * PI * (1 - state.kr_d_cosmax[2]) );  //HACK  
+}
+
 #define PLANE 0
 #define BOX 1
 #define SPHERE 2
@@ -99,8 +131,7 @@ bool FindHit(inout State state)
     {
         isHit = isHit || QuadHit(_Quads[m], state.ray, state.hit);
     }
-    
-    state.kr_d_out.z = dot(state.ray.dir, state.hit.p_n_o[1]) < 0;
+
 	return isHit;
 }
 
@@ -114,16 +145,16 @@ void Pop(inout int ptr, out State current)
 {
     current = states[--ptr];
 }
-
+ 
 void Trace(inout int ptr, inout float3 color, inout State current) 
 {
     bool hit = FindHit(current);
-    if (current.kr_d_out[1] >= MAX_DEPTH || !hit) 
+    if (current.kr_d_cosmax[1] >= MAX_DEPTH || !hit) 
     {
         if (!hit) 
         {
             color = Black();
-            current.kr_d_out[1] = MAX_DEPTH;
+            current.kr_d_cosmax[1] = MAX_DEPTH;
         }
         else if (ptr > 0) 
         {   
@@ -132,16 +163,18 @@ void Trace(inout int ptr, inout float3 color, inout State current)
                                     dot(current.hit.p_n_o[2], current.hit.p_n_o[1]));
             float3 spec = CookTorrance(current, cosi_o[0], cosi_o[1]);
             float3 kd = (1 - spec) * (1 - current.hit.mat.rough_ior_metal[2]);
-            color = current.hit.mat.eps + (kd * current.hit.mat.rho + spec * PI) * color;
-            current.kr_d_out[1] = MAX_DEPTH;
+            color = current.hit.mat.eps + (kd * current.hit.mat.rho * INV_PI + spec) * cosi_o[0] * 
+            inv_pdf(current, cosi_o) * color;
+            current.kr_d_cosmax[1] = MAX_DEPTH;
         }
         return;
     }
     current.ray.origin = current.hit.p_n_o[0] + current.hit.p_n_o[1] * EPSILON;
     current.hit.p_n_o[2] = -current.ray.dir;
-    current.ray.dir = CosineHemisphere(current.hit.p_n_o[1]);
+    bool b = (current.hit.mat.rough_ior_metal[0] > 1);
+    current.ray.dir = b * CosineHemisphere(current.hit.p_n_o[1]) + !b * ReflectionCone(current);
     Push(ptr, current);
-    ++current.kr_d_out[1];
+    ++current.kr_d_cosmax[1];
 }
 
 [numthreads(8,8,1)]
