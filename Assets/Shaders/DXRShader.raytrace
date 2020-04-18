@@ -1,0 +1,53 @@
+﻿
+float4x4 _cameraToWorld;
+float4x4 _inverseProjection;
+RWTexture2D<float4> RenderTarget;
+Texture2D<float4> _skybox;
+SamplerState sampler_skybox;
+RaytracingAccelerationStructure accelerationStructure;
+
+#pragma max_recursion_depth 5
+#define MAX_DEPTH 5
+#define SAMPLE_COUNT 32
+#define RAY_FLAG RAY_FLAG_NONE
+#define INSTANCE_INCLUSION_MASK 0xFF
+#define RAY_CONTRIB_HITGROUP_IDX 0
+#define GEOMETRY_STRIDE 1
+#define MISS_SHADER 0
+
+#include "common.cginc"
+
+RayDesc NewCameraRay(uint2 id, uint2 dim)
+{
+    float2 coord = (float2(id) / dim) * 2.f - 1.f;
+    RayDesc ray; // DXR defined
+    ray.Origin = mul(_cameraToWorld, float4(0, 0, 0, 1)).xyz;
+    ray.Direction = mul(_inverseProjection, float4(coord, 0, 1));
+    ray.Direction = normalize(mul(_cameraToWorld, float4(ray.Direction, 0)).xyz);
+    ray.TMin = 0;
+    ray.TMax = T_MAX;
+    return ray;
+}
+
+[shader("raygeneration")]
+void GenerateRays()
+{
+    uint2 id = DispatchRaysIndex().xy;
+    uint2 dim = DispatchRaysDimensions().xy;
+    RayDesc ray = NewCameraRay(id, dim);
+    RayPayload payload = NewPayload(id.x * dim.x + id.y, MAX_DEPTH);
+    TraceRay(accelerationStructure, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, payload);
+  
+    RenderTarget[id] = payload.color;
+}
+
+[shader("miss")]
+void SampleSkybox(inout RayPayload payload : SV_RayPayload)
+{
+    float3 dir = WorldRayDirection();
+    float theta = acos(dir.y) / -PI;
+    float phi = atan2(dir.x, -dir.z) * -INV_PI * 0.5f; // -1/2pi
+    float4 skyboxColor = _skybox.SampleLevel(sampler_skybox, float2(phi, theta), 0) * sin(PI * 0.5f * dir.y);
+    payload.color = skyboxColor;
+    payload.depth = 0;
+}

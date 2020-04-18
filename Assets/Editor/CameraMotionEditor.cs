@@ -2,7 +2,6 @@
 using UnityEditor;
 using UnityEngine;
 using UnityRayTracing;
-using Material = UnityRayTracing.Material;
 
 namespace Editor
 {

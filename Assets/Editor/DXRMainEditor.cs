@@ -5,7 +5,7 @@ using UnityRayTracing;
 
 namespace Editor
 {
-    [CustomEditor(typeof(RayTracingMain))]
+    [CustomEditor(typeof(DXRMain))]
     public class RayTracingMainEditor : UnityEditor.Editor
     {
 
