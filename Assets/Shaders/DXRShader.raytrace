@@ -20,7 +20,7 @@ RaytracingAccelerationStructure accelerationStructure;
 RayDesc NewCameraRay(uint2 id, uint2 dim)
 {
     float2 coord = (float2(id) / dim) * 2.f - 1.f;
-    RayDesc ray; // DXR defined
+    RayDesc ray;
     ray.Origin = mul(_cameraToWorld, float4(0, 0, 0, 1)).xyz;
     ray.Direction = mul(_inverseProjection, float4(coord, 0, 1));
     ray.Direction = normalize(mul(_cameraToWorld, float4(ray.Direction, 0)).xyz);

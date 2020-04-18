@@ -17,6 +17,8 @@ namespace UnityRayTracing
 		private Texture _skybox;
 		[SerializeField]
 		private RayTracingShader _shader;
+		[SerializeField]
+		private string _shaderPass = "DefaultRTPass";
 		private Camera _camera;
 		private RenderTexture _target;
 
@@ -36,7 +38,7 @@ namespace UnityRayTracing
 		}
 		void OnEnable()
 		{
-			_shader.SetShaderPass("DiffuseRTPass");
+			_shader.SetShaderPass(_shaderPass);
 			CreateStructure();
 		}
 

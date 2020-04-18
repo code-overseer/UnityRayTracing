@@ -46,10 +46,10 @@
 		Pass
 		{
 			Name "DefaultRTPass"
-			HLSLPROGRAM // Pass name must match that specified by SetShaderPass()
+			HLSLPROGRAM
 
 			#pragma raytracing OnRayHit
-			#include "common.hlsl"
+			#include "common.cginc"
 			float4 _Emission;
 			float _Metallic;
 			float _Roughness;
@@ -59,7 +59,7 @@
 			SamplerState sampler_MainTex;
 
 			[shader("closesthit")]
-			void OnRayHit(inout RayPayload payload : SV_RayPayload, in BuiltInTriangleIntersectionAttributes attribs : SV_IntersectionAttributes)
+			void OnRayHit(inout RayPayload payload : SV_RayPayload, in TriangleAttribute attribs : SV_IntersectionAttributes)
 			{
 				uint3 tri_idx = UnityRayTracingFetchTriangleIndices(PrimitiveIndex());
 				float3 bary = GetBarycentrics(attribs);
@@ -67,6 +67,28 @@
 				
 				payload.color = saturate(dot(normal, float3(0, 0, -1))) * _Color;
 			}
+			ENDHLSL
+		}
+
+		Pass
+		{
+			Name "DiffuseRTPass"
+			HLSLPROGRAM
+
+			#pragma raytracing OnRayHit
+			#include "common.cginc"
+			float4 _Color;
+
+			[shader("closesthit")]
+			void OnRayHit(inout RayPayload payload : SV_RayPayload, TriangleAttribute attribs : SV_IntersectionAttributes)
+			{
+				uint3 tri_idx = UnityRayTracingFetchTriangleIndices(PrimitiveIndex());
+				float3 bary = GetBarycentrics(attribs);
+				float3 normal = GetNormal(tri_idx, bary);
+
+				payload.color = saturate(dot(normal, float3(0, 0, -1))) * _Color;
+			}
+
 			ENDHLSL
 		}
 	}

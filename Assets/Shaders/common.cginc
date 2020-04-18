@@ -26,6 +26,11 @@ struct Material
     float ior;
 };
 
+struct TriangleAttribute
+{
+    float2 barycentric;
+};
+
 uint hash(in uint seed)
 {
     seed = (seed ^ 61) ^ (seed >> 16);
@@ -48,6 +53,7 @@ RayPayload NewPayload(uint seed, uint depth)
 {
     RayPayload payload;
     payload.color = float4(0, 0, 0, 1);
+    payload.ior = 1.f;
     payload.seed = hash(seed);
     rand(payload.seed);
     payload.depth = depth;
@@ -75,9 +81,9 @@ void TransformToWorld(out float3 dir, in float3 ref_y)
 #define INTERPOLATE_ATTRIBUTE(att0,att1,att2,bary) \
 (att0 * bary.x + att1 * bary.y + att2 * bary.z)
 
-float3 GetBarycentrics(in BuiltInTriangleIntersectionAttributes attribs)
+float3 GetBarycentrics(in TriangleAttribute attribs)
 {
-    return float3(1 - attribs.barycentrics.x - attribs.barycentrics.y, attribs.barycentrics);
+    return float3(1 - attribs.barycentric.x - attribs.barycentric.y, attribs.barycentric);
 }
 
 float3 GetNormal(in uint3 tri_idx, in float3 bary)
@@ -97,7 +103,6 @@ float2 GetUV(in uint3 tri_idx, in float3 bary)
 
     return INTERPOLATE_ATTRIBUTE(uv0, uv1, uv2, bary);
 }
-
 
 float3 Fresnel(in float sur_IoR, in float hit_IoR, in float3 albedo, in float metallic, in float cosi)
 {
