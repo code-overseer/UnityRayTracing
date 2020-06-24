@@ -66,6 +66,8 @@
 			float4 _Color;
 			float4 _Emission;
 			half _EmissionStrength;
+			Texture2D<float4> _MainTex;
+			SamplerState sampler_MainTex;
 
 			[shader("closesthit")]
 			void OnRayHit(inout RayPayload payload : SV_RayPayload, TriangleAttribute attribs : SV_IntersectionAttributes)
@@ -86,14 +88,14 @@
                     for (int i = 0; i < SAMPLE_COUNT; ++i)
                     {
                         TraceRay(_BVHStructure, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, copy_load);
-                        accumulate += (_EmissionStrength * _Emission + copy_load.color * _Color);
+                        accumulate += (_EmissionStrength * _Emission + copy_load.color * _Color) * _MainTex.SampleLevel(sampler_MainTex, uv, 0);
                         rand(payload.seed);
                         copy_load = payload;
                         ray = ImportanceCosine(copy_load.seed, normal);
                     }
                     payload.color = accumulate / SAMPLE_COUNT;
                 }
-				payload.color = _EmissionStrength * _Emission + payload.color * _Color;
+				payload.color = (_EmissionStrength * _Emission + payload.color * _Color) * _MainTex.SampleLevel(sampler_MainTex, uv, 0);
 			}
 
 			ENDHLSL
@@ -110,6 +112,8 @@
 			float4 _Color;
 			float4 _Emission;
 			half _EmissionStrength;
+			Texture2D<float4> _MainTex;
+			SamplerState sampler_MainTex;
 
 			[shader("closesthit")]
 			void OnRayHit(inout RayPayload payload : SV_RayPayload, TriangleAttribute attribs : SV_IntersectionAttributes)
@@ -117,6 +121,7 @@
 				uint3 tri_idx = UnityRayTracingFetchTriangleIndices(PrimitiveIndex());
 				float3 bary = GetBarycentrics(attribs);
 				float3 normal = GetNormal(tri_idx, bary);
+                float2 uv = GetUV(tri_idx, bary);
 				bool backface = dot(normal, WorldRayDirection()) > 0;
 				normal *= (!backface - backface);
                 RayDesc ray = ImportanceCosine(payload.seed, normal);
@@ -126,7 +131,7 @@
                 {    
                     TraceRay(_BVHStructure, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, payload);
                 }
-				payload.color = _EmissionStrength * _Emission + payload.color * _Color;
+				payload.color = (_EmissionStrength * _Emission + payload.color * _Color) * _MainTex.SampleLevel(sampler_MainTex, uv, 0);
 			}
 
 			ENDHLSL
