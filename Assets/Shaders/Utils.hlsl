@@ -79,7 +79,7 @@ RayPayload NewPayload(uint seed)
     RayPayload payload;
     payload.color = float4(0, 0, 0, 1);
     payload.ior = 1.f;
-    payload.seed = hash(seed);
+    payload.seed = hash(seed ^ _seed);
     rand(payload.seed);
     payload.depth = MAX_DEPTH;
     return payload;

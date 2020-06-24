@@ -27,10 +27,14 @@ namespace UnityRayTracing
 
 		private Camera _camera;
 		private RenderTexture _target;
+		private Material _aaMaterial;
+		private int _currentSample = 0;
+		private int _propertyToId;
 
 		private void Awake()
 		{
 			_camera = GetComponent<Camera>();
+			_aaMaterial = new Material(Shader.Find("Hidden/AASampler"));
 		}
 
 		private void CreateStructure()
@@ -47,7 +51,15 @@ namespace UnityRayTracing
 		private void Start()
 		{
 			_shader.SetShaderPass(_shaderPass);
+			_propertyToId = Shader.PropertyToID("_Sample");
 			CreateStructure();
+		}
+		
+		private void Update()
+		{
+			if (!transform.hasChanged) return;
+			_currentSample = 0;
+			transform.hasChanged = false;
 		}
 
 		private void OnDisable()
@@ -65,7 +77,7 @@ namespace UnityRayTracing
 			_shader.SetMatrix("_inverseProjection", _camera.projectionMatrix.inverse);
 			_shader.SetTexture("_skybox", _skybox);
 			_shader.SetTexture("RenderTarget", _target);
-			// _shader.SetInt("_seed", Random.Range(Int32.MinValue, Int32.MaxValue));
+			_shader.SetInt("_seed", Random.Range(Int32.MinValue, Int32.MaxValue));
 			_shader.SetAccelerationStructure(Shader.PropertyToID("_BVHStructure"), _rayTracingStructure);
 		}
 
@@ -74,8 +86,9 @@ namespace UnityRayTracing
 			InitRenderTexture();
 			SetShaderParams();
 			_shader.Dispatch("GenerateRays", Screen.width, Screen.height, 1, _camera);
-			
-			Graphics.Blit(_target, destination);
+			_currentSample++;
+			_aaMaterial.SetFloat(_propertyToId, _currentSample);
+			Graphics.Blit(_target, destination, _aaMaterial);
 		}
 
 		private void InitRenderTexture()
