@@ -1,13 +1,13 @@
 #ifndef LAMBERTUTILS_CGINC
 #define LAMBERTUTILS_CGINC
 
-#include "common.cginc"
+#include "Utils.hlsl"
 
 float3 Uniform_Sample(in float3 normal, inout uint seed)
 {
     float3 x, z;
     CreateCoordinateSystem(normal, x, z);
-    float2 r = float2(rnd(), rnd());
+    float2 r = float2(rand(seed), rand(seed));
     float2 a = float2(sqrt(1 - r.x * r.x), 2 * PI * r.y);
     
     return normalize(float3(a.x * cos(a.y), r.x, a.x * sin(a.y)));

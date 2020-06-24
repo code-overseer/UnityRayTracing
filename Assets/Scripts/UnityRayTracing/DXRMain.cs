@@ -1,6 +1,8 @@
-﻿using UnityEngine;
+﻿using System;
 using Unity.Mathematics;
+using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using Random = UnityEngine.Random;
 
 namespace UnityRayTracing
 {
@@ -13,12 +15,16 @@ namespace UnityRayTracing
 		};
 
 		private RayTracingAccelerationStructure _rayTracingStructure;
+
 		[SerializeField]
 		private Texture _skybox;
+
 		[SerializeField]
 		private RayTracingShader _shader;
+
 		[SerializeField]
-		private string _shaderPass = "DefaultRTPass";
+		private string _shaderPass = "LambertianPass";
+
 		private Camera _camera;
 		private RenderTexture _target;
 
@@ -32,11 +38,13 @@ namespace UnityRayTracing
 			if (_rayTracingStructure != null) return;
 			var Settings = new RayTracingAccelerationStructure.RASSettings(
 				RayTracingAccelerationStructure.ManagementMode.Automatic,
-				RayTracingAccelerationStructure.RayTracingModeMask.DynamicTransform | RayTracingAccelerationStructure.RayTracingModeMask.Static,
+				RayTracingAccelerationStructure.RayTracingModeMask.Static,
 				0xffff);
 			_rayTracingStructure = new RayTracingAccelerationStructure(Settings);
+			Debug.Log(_rayTracingStructure.GetSize());
 		}
-		void OnEnable()
+
+		private void Start()
 		{
 			_shader.SetShaderPass(_shaderPass);
 			CreateStructure();
@@ -57,7 +65,8 @@ namespace UnityRayTracing
 			_shader.SetMatrix("_inverseProjection", _camera.projectionMatrix.inverse);
 			_shader.SetTexture("_skybox", _skybox);
 			_shader.SetTexture("RenderTarget", _target);
-			_shader.SetAccelerationStructure(Shader.PropertyToID("accelerationStructure"), _rayTracingStructure);
+			// _shader.SetInt("_seed", Random.Range(Int32.MinValue, Int32.MaxValue));
+			_shader.SetAccelerationStructure(Shader.PropertyToID("_BVHStructure"), _rayTracingStructure);
 		}
 
 		private void OnRenderImage(RenderTexture source, RenderTexture destination)
@@ -68,6 +77,7 @@ namespace UnityRayTracing
 			
 			Graphics.Blit(_target, destination);
 		}
+
 		private void InitRenderTexture()
 		{
 			if (_target != null && _target.width == Screen.width && _target.height == Screen.height) return;

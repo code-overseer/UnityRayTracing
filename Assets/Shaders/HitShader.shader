@@ -7,77 +7,65 @@
 		_Roughness ("Roughness", Range(0,1)) = 0.3
 		_Metallic ("Metallic", Range(0,1)) = 0.5
 		_IoR ("Index of Refraction", Range(0,20)) = 1.3
+		_EmissionStrength("Emission Strength", Float) = 1.0
 		_Emission("Emission", Color) = (0,0,0,1)
 	}
 	SubShader
-	{
-		Pass
-		{
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment frag
-			struct appdata
-			{
-				float4 vertex : POSITION;
-				float2 uv : TEXCOORD0;
-			};
+    {
+        Tags { "RenderType"="Opaque" }
+        LOD 200
 
-			struct v2f
-			{
-				float4 vertex : SV_POSITION;
-			};
+        CGPROGRAM
+        // Physically based Standard lighting model, and enable shadows on all light types
+        #pragma surface surf Standard fullforwardshadows
 
-			float4 _Color;
+        // Use shader model 3.0 target, to get nicer looking lighting
+        #pragma target 3.0
 
-			v2f vert(appdata v) 
-			{
-				v2f o;
-				o.vertex = UnityObjectToClipPos(v.vertex);
-				return o; 
-			}
+        sampler2D _MainTex;
 
-			float4 frag(v2f i) : SV_Target { return _Color; }
+        struct Input
+        {
+            float2 uv_MainTex;
+        };
 
-			ENDCG
-		}
-	}
+        half _Glossiness;
+        half _Metallic;
+        fixed4 _Color;
+
+        // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
+        // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
+        // #pragma instancing_options assumeuniformscaling
+        UNITY_INSTANCING_BUFFER_START(Props)
+            // put more per-instance properties here
+        UNITY_INSTANCING_BUFFER_END(Props)
+
+        void surf (Input IN, inout SurfaceOutputStandard o)
+        {
+            // Albedo comes from a texture tinted by color
+            fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
+            o.Albedo = c.rgb;
+            // Metallic and smoothness come from slider variables
+            o.Metallic = _Metallic;
+            o.Smoothness = _Glossiness;
+            o.Alpha = c.a;
+        }
+        ENDCG
+    }
 	SubShader
 	{
+	    // DONT USE THIS PASS IF YOU HAVE HIGH SAMPLE/DEPTH
 		Pass
 		{
-			Name "DefaultRTPass"
+			Name "LambertianPass"
 			HLSLPROGRAM
 
 			#pragma raytracing OnRayHit
-			#include "common.cginc"
+			#include "Utils.hlsl"
+			#include "LambertUtils.cginc"
+			float4 _Color;
 			float4 _Emission;
-			float _Metallic;
-			float _Roughness;
-			float _IoR;
-			float4 _Color;
-			Texture2D<float4> _MainTex;
-			SamplerState sampler_MainTex;
-
-			[shader("closesthit")]
-			void OnRayHit(inout RayPayload payload : SV_RayPayload, in TriangleAttribute attribs : SV_IntersectionAttributes)
-			{
-				uint3 tri_idx = UnityRayTracingFetchTriangleIndices(PrimitiveIndex());
-				float3 bary = GetBarycentrics(attribs);
-				float3 normal = GetNormal(tri_idx, bary);
-				
-				payload.color = saturate(dot(normal, float3(0, 0, -1))) * _Color;
-			}
-			ENDHLSL
-		}
-
-		Pass
-		{
-			Name "DiffuseRTPass"
-			HLSLPROGRAM
-
-			#pragma raytracing OnRayHit
-			#include "common.cginc"
-			float4 _Color;
+			half _EmissionStrength;
 
 			[shader("closesthit")]
 			void OnRayHit(inout RayPayload payload : SV_RayPayload, TriangleAttribute attribs : SV_IntersectionAttributes)
@@ -85,8 +73,60 @@
 				uint3 tri_idx = UnityRayTracingFetchTriangleIndices(PrimitiveIndex());
 				float3 bary = GetBarycentrics(attribs);
 				float3 normal = GetNormal(tri_idx, bary);
+				bool backface = dot(normal, WorldRayDirection()) > 0;
+				normal *= (!backface - backface);
+                
+                payload.depth -= (payload.depth > 0);
+                if (payload.depth > 0)
+                {
+                    rand(payload.seed);
+                    RayPayload copy_load = payload;
+                    RayDesc ray = ImportanceCosine(payload.seed, normal);
+                    float4 accumulate = float4(0,0,0,0);
+                    for (int i = 0; i < SAMPLE_COUNT; ++i)
+                    {
+                        TraceRay(_BVHStructure, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, copy_load);
+                        accumulate += (_EmissionStrength * _Emission + copy_load.color * _Color);
+                        rand(payload.seed);
+                        copy_load = payload;
+                        ray = ImportanceCosine(copy_load.seed, normal);
+                    }
+                    payload.color = accumulate / SAMPLE_COUNT;
+                }
+				payload.color = _EmissionStrength * _Emission + payload.color * _Color;
+			}
 
-				payload.color = saturate(dot(normal, float3(0, 0, -1))) * _Color;
+			ENDHLSL
+		}
+		
+		Pass
+		{
+			Name "FastLambertian"
+			HLSLPROGRAM
+
+			#pragma raytracing OnRayHit
+			#include "Utils.hlsl"
+			#include "LambertUtils.cginc"
+			float4 _Color;
+			float4 _Emission;
+			half _EmissionStrength;
+
+			[shader("closesthit")]
+			void OnRayHit(inout RayPayload payload : SV_RayPayload, TriangleAttribute attribs : SV_IntersectionAttributes)
+			{
+				uint3 tri_idx = UnityRayTracingFetchTriangleIndices(PrimitiveIndex());
+				float3 bary = GetBarycentrics(attribs);
+				float3 normal = GetNormal(tri_idx, bary);
+				bool backface = dot(normal, WorldRayDirection()) > 0;
+				normal *= (!backface - backface);
+                RayDesc ray = ImportanceCosine(payload.seed, normal);
+                
+                payload.depth -= (payload.depth > 0);
+                if (payload.depth > 0)
+                {    
+                    TraceRay(_BVHStructure, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, payload);
+                }
+				payload.color = _EmissionStrength * _Emission + payload.color * _Color;
 			}
 
 			ENDHLSL

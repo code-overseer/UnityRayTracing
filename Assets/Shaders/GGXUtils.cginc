@@ -1,7 +1,7 @@
 #ifndef GGXUTILS_CGINC
 #define GGXUTILS_CGINC
 
-#include "common.cginc"
+#include "Utils.hlsl"
 
 float chiGGX(float v)
 {

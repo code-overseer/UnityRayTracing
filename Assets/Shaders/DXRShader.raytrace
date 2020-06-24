@@ -1,21 +1,8 @@
 ﻿
-float4x4 _cameraToWorld;
-float4x4 _inverseProjection;
-RWTexture2D<float4> RenderTarget;
-Texture2D<float4> _skybox;
-SamplerState sampler_skybox;
-RaytracingAccelerationStructure accelerationStructure;
 
-#pragma max_recursion_depth 5
-#define MAX_DEPTH 5
-#define SAMPLE_COUNT 32
-#define RAY_FLAG RAY_FLAG_NONE
-#define INSTANCE_INCLUSION_MASK 0xFF
-#define RAY_CONTRIB_HITGROUP_IDX 0
-#define GEOMETRY_STRIDE 1
-#define MISS_SHADER 0
+#pragma max_recursion_depth 8
 
-#include "common.cginc"
+#include "Utils.hlsl"
 
 RayDesc NewCameraRay(uint2 id, uint2 dim)
 {
@@ -35,10 +22,15 @@ void GenerateRays()
     uint2 id = DispatchRaysIndex().xy;
     uint2 dim = DispatchRaysDimensions().xy;
     RayDesc ray = NewCameraRay(id, dim);
-    RayPayload payload = NewPayload(id.x * dim.x + id.y, MAX_DEPTH);
-    TraceRay(accelerationStructure, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, payload);
+    RayPayload payload = NewPayload(id.x * dim.x + id.y);
+    float4 accumulate = payload.color;
+    for (int i = 0; i < SAMPLE_COUNT; ++i, payload = NewPayload(payload.seed))
+    {
+        TraceRay(_BVHStructure, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, payload);
+        accumulate += payload.color;
+    }
   
-    RenderTarget[id] = payload.color;
+    RenderTarget[id] = accumulate / SAMPLE_COUNT;
 }
 
 [shader("miss")]
