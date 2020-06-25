@@ -75,9 +75,10 @@
 				uint3 tri_idx = UnityRayTracingFetchTriangleIndices(PrimitiveIndex());
 				float3 bary = GetBarycentrics(attribs);
 				float3 normal = GetNormal(tri_idx, bary);
+				float2 uv = GetUV(tri_idx, bary);
 				bool backface = dot(normal, WorldRayDirection()) > 0;
 				normal *= (!backface - backface);
-                
+                payload.depth = min(payload.depth, 3);
                 payload.depth -= (payload.depth > 0);
                 if (payload.depth > 0)
                 {
@@ -85,9 +86,10 @@
                     RayPayload copy_load = payload;
                     RayDesc ray = ImportanceCosine(payload.seed, normal);
                     float4 accumulate = float4(0,0,0,0);
-                    for (int i = 0; i < SAMPLE_COUNT; ++i)
+                    int count = min(SAMPLE_COUNT, 4);
+                    for (int i = 0; i < count; ++i)
                     {
-                        TraceRay(_BVHStructure, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, copy_load);
+                        TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, copy_load);
                         accumulate += (_EmissionStrength * _Emission + copy_load.color * _Color) * _MainTex.SampleLevel(sampler_MainTex, uv, 0);
                         rand(payload.seed);
                         copy_load = payload;
@@ -125,11 +127,11 @@
 				bool backface = dot(normal, WorldRayDirection()) > 0;
 				normal *= (!backface - backface);
                 RayDesc ray = ImportanceCosine(payload.seed, normal);
-                
+                payload.depth = min(payload.depth, 3);
                 payload.depth -= (payload.depth > 0);
                 if (payload.depth > 0)
                 {    
-                    TraceRay(_BVHStructure, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, payload);
+                    TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, payload);
                 }
 				payload.color = (_EmissionStrength * _Emission + payload.color * _Color) * _MainTex.SampleLevel(sampler_MainTex, uv, 0);
 			}

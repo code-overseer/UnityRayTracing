@@ -26,7 +26,7 @@ void GenerateRays()
     float4 accumulate = payload.color;
     for (int i = 0; i < SAMPLE_COUNT; ++i, payload = NewPayload(payload.seed))
     {
-        TraceRay(_BVHStructure, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, payload);
+        TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, payload);
         accumulate += payload.color;
     }
   

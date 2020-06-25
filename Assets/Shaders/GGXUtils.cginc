@@ -17,7 +17,6 @@ float GGX_PartialGeometryTerm(float3 v, float3 n, float3 h, float roughness)
     return (chi * 2) / (1 + sqrt(1 + roughness * roughness * tan2));
 }
 
-
 float3 GGX_sample(in float roughness, inout uint seed)
 {
     float2 theta_phi = float2(rand(seed), rand(seed));

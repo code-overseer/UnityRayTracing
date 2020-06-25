@@ -45,7 +45,6 @@ namespace UnityRayTracing
 				RayTracingAccelerationStructure.RayTracingModeMask.Static,
 				0xffff);
 			_rayTracingStructure = new RayTracingAccelerationStructure(Settings);
-			Debug.Log(_rayTracingStructure.GetSize());
 		}
 
 		private void Start()
@@ -65,9 +64,8 @@ namespace UnityRayTracing
 		private void OnDisable()
 		{ 
 			_rayTracingStructure?.Release();
-			_target?.Release();
+			_target.Release();
 			_rayTracingStructure = null;
-			_target = null;
 		}
 
 		private void SetShaderParams()
@@ -78,7 +76,7 @@ namespace UnityRayTracing
 			_shader.SetTexture("_skybox", _skybox);
 			_shader.SetTexture("RenderTarget", _target);
 			_shader.SetInt("_seed", Random.Range(Int32.MinValue, Int32.MaxValue));
-			_shader.SetAccelerationStructure(Shader.PropertyToID("_BVHStructure"), _rayTracingStructure);
+			_shader.SetAccelerationStructure(Shader.PropertyToID("_DiffuseBVH"), _rayTracingStructure);
 		}
 
 		private void OnRenderImage(RenderTexture source, RenderTexture destination)

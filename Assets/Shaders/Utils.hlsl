@@ -29,7 +29,7 @@ int _seed;
 RWTexture2D<float4> RenderTarget;
 Texture2D<float4> _skybox;
 SamplerState sampler_skybox;
-RaytracingAccelerationStructure _BVHStructure;
+RaytracingAccelerationStructure _DiffuseBVH;
 
 
 struct RayPayload
@@ -89,7 +89,7 @@ RayPayload NewLambertPayload(uint seed)
     RayPayload payload;
     payload.color = float4(0, 0, 0, 1);
     payload.ior = 1.f;
-    payload.seed = hash(seed);
+    payload.seed = hash(seed ^ _seed);
     rand(payload.seed);
     payload.depth = min(MAX_DEPTH, 2);
     payload.type = T_LAMBERT;
@@ -101,7 +101,7 @@ RayPayload NewGGXPayload(uint seed)
     RayPayload payload;
     payload.color = float4(0, 0, 0, 1);
     payload.ior = 1.f;
-    payload.seed = hash(seed);
+    payload.seed = hash(seed ^ _seed);
     rand(payload.seed);
     payload.depth = 3;
     payload.type = T_GGX;
