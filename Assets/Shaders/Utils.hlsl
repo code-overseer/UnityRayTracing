@@ -13,9 +13,8 @@
 #define RAY_CONTRIB_HITGROUP_IDX 0
 #define GEOMETRY_STRIDE 1
 #define MISS_SHADER 0
-#define T_GGX 0
-#define T_LAMBERT 1
-#define T_SAMPLE 2
+#define T_LAMBERT 0
+#define T_SPEC 1
 #define SAMPLE_COUNT 20
 #define MAX_DEPTH 3
 
@@ -35,7 +34,8 @@ RaytracingAccelerationStructure _DiffuseBVH;
 struct RayPayload
 {
     float4 color;
-    float ior;
+    half ior;
+    half ks;
     uint seed;
     uint depth;
     uint type;
@@ -79,32 +79,10 @@ RayPayload NewPayload(uint seed)
     RayPayload payload;
     payload.color = float4(0, 0, 0, 1);
     payload.ior = 1.f;
+    payload.ks = 1.f;
     payload.seed = hash(seed ^ _seed);
     rand(payload.seed);
     payload.depth = MAX_DEPTH;
-    return payload;
-}
-RayPayload NewLambertPayload(uint seed)
-{
-    RayPayload payload;
-    payload.color = float4(0, 0, 0, 1);
-    payload.ior = 1.f;
-    payload.seed = hash(seed ^ _seed);
-    rand(payload.seed);
-    payload.depth = min(MAX_DEPTH, 2);
-    payload.type = T_LAMBERT;
-    return payload;
-}
-
-RayPayload NewGGXPayload(uint seed)
-{
-    RayPayload payload;
-    payload.color = float4(0, 0, 0, 1);
-    payload.ior = 1.f;
-    payload.seed = hash(seed ^ _seed);
-    rand(payload.seed);
-    payload.depth = 3;
-    payload.type = T_GGX;
     return payload;
 }
 

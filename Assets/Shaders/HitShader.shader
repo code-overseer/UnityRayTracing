@@ -138,5 +138,61 @@
 
 			ENDHLSL
 		}
+		
+		Pass
+		{
+			Name "SpecPass"
+			HLSLPROGRAM
+
+			#pragma raytracing OnRayHit
+			#include "Utils.hlsl"
+			#include "LambertUtils.cginc"
+			#include "SpecularUtils.cginc"
+			half4 _Color;
+			half4 _Emission;
+			half _EmissionStrength;
+			half _Roughness;
+			Texture2D<float4> _MainTex;
+			SamplerState sampler_MainTex;
+
+			[shader("closesthit")]
+			void OnRayHit(inout RayPayload payload : SV_RayPayload, TriangleAttribute attribs : SV_IntersectionAttributes)
+			{
+				uint3 tri_idx = UnityRayTracingFetchTriangleIndices(PrimitiveIndex());
+				float3 bary = GetBarycentrics(attribs);
+				float3 normal = GetNormal(tri_idx, bary);
+				float2 uv = GetUV(tri_idx, bary);
+				bool backface = dot(normal, WorldRayDirection()) > 0;
+				normal *= (!backface - backface);
+                payload.depth = min(payload.depth, 3);
+                payload.depth -= (payload.depth > 0);
+                if (payload.depth > 0)
+                {
+                    rand(payload.seed);
+                    RayPayload diffuse = payload;
+				    diffuse.type = T_LAMBERT;
+				    RayDesc ray = ImportanceCosine(payload.seed, normal);
+                    TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, diffuse);
+                    
+                    rand(payload.seed);
+                    RayPayload specular = payload;
+                    specular.type = T_SPEC;
+                    ray = ImportanceSpecular(payload.seed, normal, _Roughness);
+                    TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, specular);
+                    
+                    payload.color = (1 - specular.ks) * diffuse.color + specular.color; 
+                }
+                if (payload.type == T_SPEC)
+                {
+                    payload.color = (_EmissionStrength * _Emission + payload.color * _Color) * _MainTex.SampleLevel(sampler_MainTex, uv, 0);
+                }
+                else
+                {
+                    payload.color = (_EmissionStrength * _Emission + payload.color * _Color) * _MainTex.SampleLevel(sampler_MainTex, uv, 0);
+                }
+			}
+
+			ENDHLSL
+		}
 	}
 }
