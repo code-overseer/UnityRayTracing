@@ -34,8 +34,8 @@ RaytracingAccelerationStructure _DiffuseBVH;
 struct RayPayload
 {
     float4 color;
-    half ior;
-    half ks;
+    float4 ks;
+    float ior;
     uint seed;
     uint depth;
     uint type;
@@ -140,12 +140,12 @@ float2 GetSphericalUV(in uint3 tri_idx, in float3 bary)
     return float2(n.x, n.y) * d;
 }
 
-float3 Fresnel(in float sur_IoR, in float hit_IoR, in float3 albedo, in float metallic, in float cosi)
+float4 Fresnel(in float sur_IoR, in float hit_IoR, in float4 albedo, in float metallic, in float cosi)
 {
-    float3 r0 = (sur_IoR - hit_IoR) / (sur_IoR + hit_IoR);
+    float4 r0 = abs((sur_IoR - hit_IoR) / (sur_IoR + hit_IoR));
     r0 = r0 * r0;
     r0 = lerp(r0, albedo, metallic);
-    return r0 + (1 - r0) * pow((1 - abs(cosi)), 5);
+    return saturate(r0 + (1 - r0) * pow(1 - cosi, 5));
 }
 
 RayDesc NewCameraRay(uint2 id, uint2 dim, inout uint seed)

@@ -148,12 +148,26 @@
 			#include "Utils.hlsl"
 			#include "LambertUtils.cginc"
 			#include "SpecularUtils.cginc"
-			half4 _Color;
-			half4 _Emission;
-			half _EmissionStrength;
-			half _Roughness;
+			float4 _Color;
+			float4 _Emission;
+			float _EmissionStrength;
+			float _Roughness;
+			float _Metallic;
+			float _IoR;
 			Texture2D<float4> _MainTex;
 			SamplerState sampler_MainTex;
+
+			Material NewMat(in float2 uv)
+			{
+			    Material mat;
+			    float4 tex_col = _MainTex.SampleLevel(sampler_MainTex, uv, 0);
+			    mat.color = _Color * tex_col;
+			    mat.emission = _EmissionStrength * _Emission * tex_col;
+			    mat.metallic = _Metallic;
+			    mat.ior = _IoR;
+			    mat.roughness = _Roughness;
+			    return mat;
+			}
 
 			[shader("closesthit")]
 			void OnRayHit(inout RayPayload payload : SV_RayPayload, TriangleAttribute attribs : SV_IntersectionAttributes)
@@ -166,30 +180,38 @@
 				normal *= (!backface - backface);
                 payload.depth = min(payload.depth, 3);
                 payload.depth -= (payload.depth > 0);
+                RayDesc ray;
+                Material mat = NewMat(uv);
                 if (payload.depth > 0)
                 {
                     rand(payload.seed);
                     RayPayload diffuse = payload;
-				    diffuse.type = T_LAMBERT;
-				    RayDesc ray = ImportanceCosine(payload.seed, normal);
-                    TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, diffuse);
-                    
+                    diffuse.type = T_LAMBERT;
                     rand(payload.seed);
                     RayPayload specular = payload;
-                    specular.type = T_SPEC;
-                    ray = ImportanceSpecular(payload.seed, normal, _Roughness);
-                    TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, specular);
+				    specular.type = T_SPEC;
+				    
+				    ray = ImportanceCosine(diffuse.seed, normal);
+                    TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, diffuse);
                     
-                    payload.color = (1 - specular.ks) * diffuse.color + specular.color; 
+                    ray = ImportanceSpecular(specular.seed, normal, mat.roughness);
+                    TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, specular);
+                    float3 view = -WorldRayDirection();
+                    float3 h = normalize(ray.Direction + view);
+                    float4 ks = Fresnel(1.0, mat.ior, mat.color, mat.metallic, saturate(dot(h, view)));
+                    payload.color = mat.emission + ((1 - ks) * (1 - mat.metallic) * diffuse.color * mat.color + ks * specular.color);
+                    return;
                 }
                 if (payload.type == T_SPEC)
                 {
-                    payload.color = (_EmissionStrength * _Emission + payload.color * _Color) * _MainTex.SampleLevel(sampler_MainTex, uv, 0);
+                    ray = ImportanceSpecular(payload.seed, normal, mat.roughness);
+                    payload.color = mat.emission + Specular(normal, -WorldRayDirection(), ray.Direction, mat, payload.ks) * payload.color;
                 }
                 else
                 {
-                    payload.color = (_EmissionStrength * _Emission + payload.color * _Color) * _MainTex.SampleLevel(sampler_MainTex, uv, 0);
-                }
+                    payload.ks = 0;
+                    payload.color = mat.emission + mat.color * payload.color;
+                }   
 			}
 
 			ENDHLSL

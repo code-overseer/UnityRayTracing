@@ -8,7 +8,7 @@ float chiGGX(float v)
     return v > 0 ? 1 : 0;
 }
 
-float GGX_PartialGeometryTerm(float3 v, float3 n, float3 h, float roughness)
+float GGX_PartialGeometryTerm(in float3 v, in float3 n, in float3 h, float roughness)
 {
     float VoH2 = saturate(dot(v, h));
     float chi = chiGGX(VoH2 / saturate(dot(v, n)));
@@ -17,10 +17,10 @@ float GGX_PartialGeometryTerm(float3 v, float3 n, float3 h, float roughness)
     return (chi * 2) / (1 + sqrt(1 + roughness * roughness * tan2));
 }
 
-float Simple_Geometry(float3 v, float3 n, float3 h, float3 l)
+float Simple_Geometry(in float3 n, in float3 v, in float3 l, in float3 h)
 {
-    float n_h_v_h = dot(n,h) / dot(v,h);
-    return min(1, min(2 * n_h_v_h * dot(n,v), 2 * n_h_v_h * dot(n,l)));
+    float n_h_v_h = saturate(dot(n,h)) / saturate(dot(v,h));
+    return min(1, min(2 * n_h_v_h * saturate(dot(n,v)), 2 * n_h_v_h * saturate(dot(n,l))));
 }
 
 float3 GGX_sample(in float roughness, inout uint seed)
@@ -43,85 +43,47 @@ float3 Beckmann_sample(in float roughness, inout uint seed)
     return normalize(dir);
 }
 
-float3 Beckmann_Specular(in float3 normal, in float3 view_dir, in float3 light_dir, in Material mat, in half sur_ior, inout float3 ks)
+float GeometryTerm(in float3 normal, in float3 view, in float3 light, in float3 h, float roughness)
 {
-    float3 h = normalize(light_dir + view_dir);
-    float cos_o = saturate(dot(normal, view_dir));
-    float cos_i = saturate(dot(normal, light_dir));
-    float sin_i = sqrt(1 - cos_i * cos_i);
-    ks = Fresnel(sur_ior, mat.ior, (float3) mat.color, mat.metallic, saturate(dot(h, view_dir)));
-    float k_geo = Simple_Geometry(view_dir, normal, h, light_dir);
-    float denominator = saturate(4 * (cos_i + 0.05)); // 0.05 prevents div by zero
-    return ks * k_geo * sin_i / denominator;
-}
-
-float3 GGX_Specular(in float3 normal, in float3 view_dir, in float3 light_dir, in Material mat, in half sur_ior, inout float3 ks)
-{
-    float3 h = normalize(light_dir + view_dir);
-    float cos_o = saturate(dot(normal, view_dir));
-    float cos_i = saturate(dot(normal, light_dir));
-    float sin_i = sqrt(1 - cos_i * cos_i);
-    ks = Fresnel(sur_ior, mat.ior, (float3) mat.color, mat.metallic, saturate(dot(h, view_dir)));
-    float k_geo = GGX_PartialGeometryTerm(view_dir, normal, h, mat.roughness) * GGX_PartialGeometryTerm(light_dir, normal, h, mat.roughness);
-    float noh = saturate(dot(h, normal));
-    float denominator = saturate(4 * (cos_o * noh + 0.05)); // 0.05 prevents div by zero
-    
-    return ks * k_geo * sin_i / denominator;
-}
-
-float4 SpecColor(in float3 normal, in float3 view_dir, in float3 light_dir, in Material mat, in half sur_ior, inout float3 ks)
-{
-    if (mat.roughness <= 0.2)
+    if (roughness <= 0.2)
     {
-        return float4(Beckmann_Specular(normal, view_dir, light_dir, mat, sur_ior, ks), 1);
+        return Simple_Geometry(normal, view, light, h);
     }
-    return float4(GGX_Specular(normal, view_dir, light_dir, mat, sur_ior, ks), 1);
-}
-
-float GGX_Distribution(in float3 n, in float3 h, float roughness)
-{
-    float NoH = dot(n, h);
-    float alpha2 = roughness * roughness;
-    float NoH2 = NoH * NoH;
-    float den = NoH2 * alpha2 + (1 - NoH2);
-    return (chiGGX(NoH) * alpha2) * INV_PI / (den * den);
-}
-
-RayDesc ImportanceGGX(inout uint seed, in float3 normal, in float roughness)
-{
-    RayDesc ray; // DXR defined
-    ray.Origin = WorldRayOrigin();
-    ray.Direction = WorldRayDirection();
-    ray.TMin = 0;
-    ray.TMax = T_MAX;
-    ray.Origin = ray.Origin + RayTCurrent() * ray.Direction + EPSILON * normal;
-    ray.Direction = GGX_sample(roughness, seed);
-    TransformToWorld(ray.Direction, normal);
-    return ray;
-}
-
-RayDesc ImportanceBeckmann(inout uint seed, in float3 normal, in float roughness)
-{
-    RayDesc ray; // DXR defined
-    ray.Origin = WorldRayOrigin();
-    ray.Direction = WorldRayDirection();
-    ray.TMin = 0;
-    ray.TMax = T_MAX;
-    ray.Origin = ray.Origin + RayTCurrent() * ray.Direction + EPSILON * normal;
-    ray.Direction = Beckmann_sample(roughness, seed);
-    TransformToWorld(ray.Direction, normal);
-    return ray;
+    else
+    {
+        return GGX_PartialGeometryTerm(view, normal, h, roughness) * GGX_PartialGeometryTerm(light, normal, h, roughness);
+    } 
 }
 
 RayDesc ImportanceSpecular(inout uint seed, in float3 normal, in float roughness)
 {
+    RayDesc ray; // DXR defined
+    ray.Origin = WorldRayOrigin();
+    ray.Direction = WorldRayDirection();
+    ray.TMin = 0;
+    ray.TMax = T_MAX;
+    ray.Origin = ray.Origin + RayTCurrent() * ray.Direction + EPSILON * normal;
     if (roughness <= 0.2)
     {
-        return ImportanceBeckmann(seed, normal, roughness);
+        ray.Direction = Beckmann_sample(roughness, seed);
     }
-    return ImportanceGGX(seed, normal, roughness);
+    else 
+    {
+        ray.Direction = GGX_sample(roughness, seed);
+    }
+    TransformToWorld(ray.Direction, normal);
+    return ray;
 }
 
-
+float4 Specular(in float3 normal, in float3 view, in float3 light, in Material mat, inout float4 ks)
+{
+    float3 h = normalize(light + view);
+    float cos_o = saturate(dot(normal, view));
+    float cos_i = saturate(dot(normal, light));
+    float k_geo = GeometryTerm(normal, view, light, h, mat.roughness);
+    float denominator = 4 * saturate(cos_o + 0.01);
+    ks = Fresnel(1.0, mat.ior, mat.color, mat.metallic, saturate(dot(h, view)));
+    return ks * k_geo / denominator;
+}
 
 #endif
