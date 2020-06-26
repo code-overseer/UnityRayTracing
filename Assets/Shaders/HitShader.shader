@@ -175,43 +175,31 @@
 				uint3 tri_idx = UnityRayTracingFetchTriangleIndices(PrimitiveIndex());
 				float3 bary = GetBarycentrics(attribs);
 				float3 normal = GetNormal(tri_idx, bary);
-				float2 uv = GetUV(tri_idx, bary);
 				bool backface = dot(normal, WorldRayDirection()) > 0;
 				normal *= (!backface - backface);
+				float2 uv = GetUV(tri_idx, bary);
                 payload.depth = min(payload.depth, 3);
                 payload.depth -= (payload.depth > 0);
-                RayDesc ray;
                 Material mat = NewMat(uv);
+                rand(payload.seed);
+                RayPayload diffuse = payload;
+                diffuse.type = T_LAMBERT;
+                rand(payload.seed);
+                RayPayload specular = payload;
+                specular.type = T_SPEC;
                 if (payload.depth > 0)
                 {
-                    rand(payload.seed);
-                    RayPayload diffuse = payload;
-                    diffuse.type = T_LAMBERT;
-                    rand(payload.seed);
-                    RayPayload specular = payload;
-				    specular.type = T_SPEC;
-				    
-				    ray = ImportanceCosine(diffuse.seed, normal);
+				    RayDesc ray = ImportanceCosine(diffuse.seed, normal);
                     TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, diffuse);
-                    
                     ray = ImportanceSpecular(specular.seed, normal, mat.roughness);
                     TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, specular);
-                    float3 view = -WorldRayDirection();
-                    float3 h = normalize(ray.Direction + view);
-                    float4 ks = Fresnel(1.0, mat.ior, mat.color, mat.metallic, saturate(dot(h, view)));
-                    payload.color = mat.emission + ((1 - ks) * (1 - mat.metallic) * diffuse.color * mat.color + ks * specular.color);
-                    return;
                 }
-                if (payload.type == T_SPEC)
-                {
-                    ray = ImportanceSpecular(payload.seed, normal, mat.roughness);
-                    payload.color = mat.emission + Specular(normal, -WorldRayDirection(), ray.Direction, mat, payload.ks) * payload.color;
-                }
-                else
-                {
-                    payload.ks = 0;
-                    payload.color = mat.emission + mat.color * payload.color;
-                }   
+                RayDesc ray = ImportanceSpecular(payload.seed, normal, mat.roughness);
+                float4 ks;
+                float4 spec = Specular(normal, -WorldRayDirection(), ray.Direction, mat, ks);
+                ks = (mat.roughness <= 1e-5) ? float4(1,1,1,1) : ks;
+                payload.color = mat.emission + saturate((1 - mat.metallic) * (1 - ks) * diffuse.color * mat.color + spec * specular.color);
+                
 			}
 
 			ENDHLSL

@@ -15,8 +15,8 @@
 #define MISS_SHADER 0
 #define T_LAMBERT 0
 #define T_SPEC 1
-#define SAMPLE_COUNT 20
-#define MAX_DEPTH 3
+#define SAMPLE_COUNT 16
+#define MAX_DEPTH 7
 
 struct RaytracingAccelerationStructure;
 struct RayDesc;

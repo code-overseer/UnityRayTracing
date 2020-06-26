@@ -30,31 +30,7 @@ void GenerateRays()
         accumulate += payload.color;
     }
   
-    RenderTarget[id] = accumulate / SAMPLE_COUNT;
-}
-
-void Temp()
-{
-    uint2 id = DispatchRaysIndex().xy;
-    uint2 dim = DispatchRaysDimensions().xy;
-    RayDesc ray = NewCameraRay(id, dim);
-    RayPayload diffuse = NewPayload(id.x * dim.x + id.y);
-    diffuse.type = T_LAMBERT;
-    RayPayload specular = NewPayload(id.x * dim.x + id.y);
-    specular.type = T_SPEC;
-    float4 accumulate = float4(0,0,0,0);
-    for (int i = 0; i < SAMPLE_COUNT; ++i)
-    {
-        TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, diffuse);
-        TraceRay(_DiffuseBVH, RAY_FLAG, INSTANCE_INCLUSION_MASK, RAY_CONTRIB_HITGROUP_IDX, GEOMETRY_STRIDE, MISS_SHADER, ray, specular);
-        accumulate += (1 - specular.ks) * diffuse.color + specular.color;
-        diffuse = NewPayload(diffuse.seed);
-        diffuse.type = T_LAMBERT;
-        specular = NewPayload(specular.seed);
-        specular.type = T_SPEC;
-    }
-  
-    RenderTarget[id] = accumulate / SAMPLE_COUNT;
+    RenderTarget[id] = pow(saturate(accumulate / SAMPLE_COUNT), 1/2.2);
 }
 
 [shader("miss")]
